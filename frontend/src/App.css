@@ -1110,3 +1110,19 @@
     align-items: flex-start;
   }
 }
+
+.centered-form-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.centered-form-pane .register-card {
+  margin-top: 1rem;
+}
+
+.booking-form-card select:disabled {
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
