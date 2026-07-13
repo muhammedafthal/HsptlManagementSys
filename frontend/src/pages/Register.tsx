@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+// import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   Activity,
@@ -10,6 +11,9 @@ import {
   MapPin,
   ArrowLeft,
 } from "lucide-react";
+
+// const location = useLocation();
+// console.log(location);
 
 interface RegisterProps {
   onNavigateToLogin: () => void;

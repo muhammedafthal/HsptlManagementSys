@@ -140,7 +140,12 @@ const MainAppContent: React.FC = () => {
           <Sidebar currentTab={activeTab} setCurrentTab={setActiveTab} />
         )}
         <main className="app-main-content">
-          {user.role === "admin" && <AdminDashboard currentTab={activeTab} />}
+          {user.role === "admin" && (
+            <AdminDashboard
+              currentTab={activeTab}
+              setCurrentTab={setActiveTab}
+            />
+          )}
           {user.role === "doctor" && <DoctorDashboard currentTab={activeTab} />}
           {user.role === "patient" && (
             <PatientDashboard
