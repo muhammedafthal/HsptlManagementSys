@@ -1962,6 +1962,13 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
               ).length === 0 ? (
                 <div className="no-bookings-placeholder">
                   <p>You have no scheduled bookings.</p>
+                  {/* <button
+                    onClick={() => setCurrentTab("book_appointment")}
+                    className="btn btn-primary btn-sm"
+                  >
+                    Book First Consultation
+                  </button> */}
+
                   <button
                     onClick={() => setCurrentTab("book_appointment")}
                     className="btn btn-primary btn-sm"

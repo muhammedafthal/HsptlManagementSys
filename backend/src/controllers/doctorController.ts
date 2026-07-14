@@ -68,7 +68,7 @@ export const createDoctor = async (
     if (userExists) {
       res.status(400).json({
         success: false,
-        message: "User already exists with this phone number",
+        message: "This phone number is already exist!",
       });
       return;
     }

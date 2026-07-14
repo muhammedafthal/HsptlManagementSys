@@ -4763,6 +4763,8 @@ import {
   Edit2,
   Check,
   X,
+  Stethoscope,
+  Eye,
   RefreshCw,
 } from "lucide-react";
 
@@ -4770,6 +4772,15 @@ interface AdminDashboardProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
 }
+
+const DEPARTMENTS = [
+  "Cardiology",
+  "Neurology",
+  "Pediatrics",
+  "General Medicine",
+  "Orthopedics",
+  "Dermatology",
+];
 
 const DAY_OPTIONS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -4844,6 +4855,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       .split("T")[0],
   });
 
+  const [viewingApptId, setViewingApptId] = useState<string | null>(null);
+  const [viewApptNotes, setViewApptNotes] = useState("");
+
+  const handleOpenViewAppointment = (appt: any) => {
+    setViewApptNotes(appt.notes || "");
+    setViewingApptId(appt._id);
+  };
+
+  const handleCloseViewAppointment = () => {
+    setViewingApptId(null);
+    setViewApptNotes("");
+  };
+
+  const handleSaveApptNotes = async (apptId: string, status: string) => {
+    try {
+      const res = await fetch(`${apiUrl}/appointments/${apptId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status, notes: viewApptNotes }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData();
+      } else {
+        alert(data.message || "Failed to save notes");
+      }
+    } catch (err) {
+      alert("Error saving notes");
+    }
+  };
+
+  const [showBookForApptForm, setShowBookForApptForm] = useState(false);
+  const [bookForApptDept, setBookForApptDept] = useState("");
+  const [bookForApptForm, setBookForApptForm] = useState({
+    patientId: "",
+    doctorId: "",
+    date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0],
+    timeSlot: "",
+    reason: "",
+  });
   // Edit Appointment State
   const [editingApptId, setEditingApptId] = useState<string | null>(null);
   const [editApptForm, setEditApptForm] = useState({
@@ -4851,6 +4907,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     timeSlot: "",
     reason: "",
   });
+
+  const viewingAppt = appointments.find((a) => a._id === viewingApptId);
+
+  const bookForApptFilteredDoctors = bookForApptDept
+    ? doctors.filter((d) => d.department === bookForApptDept)
+    : [];
+
+  const bookForApptDocInfo = doctors.find(
+    (d) => d._id === bookForApptForm.doctorId,
+  );
 
   const fetchData = async () => {
     setLoading(true);
@@ -4911,6 +4977,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       fetchData();
     }
   }, [token, currentTab]);
+
+  const [phoneAutoMatched, setPhoneAutoMatched] = useState(false);
 
   // Doctor CRUD
   const resetDoctorForm = () => {
@@ -5075,16 +5143,95 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const handlePatientPhoneChange = (value: string) => {
+    const match = patients.find((p) => p.user?.phoneNumber === value);
+
+    if (match) {
+      // Exact match found — auto-fill the rest of the form from the
+      // existing record and switch this form into "edit" mode for them,
+      // so submitting updates the existing patient instead of creating
+      // a duplicate.
+      setPatientForm({
+        name: match.user?.name || "",
+        phoneNumber: value,
+        address: match.address || "",
+      });
+      setEditingPatientId(match._id);
+      setPhoneAutoMatched(true);
+    } else if (phoneAutoMatched) {
+      // We were previously auto-matched (e.g. admin backspaced the number
+      // after a match) — clear the auto-filled name/address along with the
+      // match state, so stale data from the matched patient doesn't linger.
+      setPatientForm({
+        name: "",
+        phoneNumber: value,
+        address: "",
+      });
+      setEditingPatientId(null);
+      setPhoneAutoMatched(false);
+    } else {
+      // Normal typing — either creating a fresh patient, or the admin
+      // explicitly opened Edit on a real row (phoneAutoMatched is false
+      // in that case too, so name/address are left alone on purpose).
+      setPatientForm((prev) => ({ ...prev, phoneNumber: value }));
+    }
+  };
+
+  // const handlePatientPhoneChange = (value: string) => {
+  //   const match = patients.find((p) => p.user?.phoneNumber === value);
+
+  //   if (match) {
+  //     // Exact match found — auto-fill the rest of the form from the
+  //     // existing record and switch this form into "edit" mode for them,
+  //     // so submitting updates the existing patient instead of creating
+  //     // a duplicate.
+  //     setPatientForm({
+  //       name: match.user?.name || "",
+  //       phoneNumber: value,
+  //       address: match.address || "",
+  //     });
+  //     setEditingPatientId(match._id);
+  //     setPhoneAutoMatched(true);
+  //   } else {
+  //     // No exact match — if we were previously auto-matched to a patient
+  //     // (not one the admin explicitly opened via the Edit button), revert
+  //     // back to "create new" mode as they keep typing.
+  //     if (phoneAutoMatched) {
+  //       setEditingPatientId(null);
+  //       setPhoneAutoMatched(false);
+  //     }
+  //     setPatientForm((prev) => ({ ...prev, phoneNumber: value }));
+  //   }
+  // };
+
+  const handleGoToBookAppointment = (patientId: string) => {
+    resetPatientForm();
+    setBookForApptDept("");
+    setBookForApptForm({
+      patientId,
+      doctorId: "",
+      date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
+      timeSlot: "",
+      reason: "",
+    });
+    setShowBookForApptForm(true);
+    setCurrentTab("appointments");
+  };
+
   // Patient CRUD
   const resetPatientForm = () => {
     setPatientForm(emptyPatientForm);
     setEditingPatientId(null);
+    setPhoneAutoMatched(false);
     setShowPatientForm(false);
   };
 
   const handleOpenAddPatient = () => {
     setPatientForm(emptyPatientForm);
     setEditingPatientId(null);
+    setPhoneAutoMatched(false);
     setShowPatientForm(true);
   };
 
@@ -5095,6 +5242,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       address: pat.address || "",
     });
     setEditingPatientId(pat._id);
+    setPhoneAutoMatched(false);
     setShowPatientForm(true);
   };
 
@@ -5198,6 +5346,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     } catch (err) {
       alert("Error deleting patient");
+    }
+  };
+
+  const resetBookForApptForm = () => {
+    setBookForApptDept("");
+    setBookForApptForm({
+      patientId: "",
+      doctorId: "",
+      date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
+      timeSlot: "",
+      reason: "",
+    });
+    setShowBookForApptForm(false);
+  };
+
+  const handleSubmitBookForAppt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      !bookForApptForm.patientId ||
+      !bookForApptForm.doctorId ||
+      !bookForApptForm.date ||
+      !bookForApptForm.timeSlot ||
+      !bookForApptForm.reason
+    ) {
+      alert("Please fill in all details");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/appointments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          patientId: bookForApptForm.patientId,
+          doctorId: bookForApptForm.doctorId,
+          date: bookForApptForm.date,
+          timeSlot: bookForApptForm.timeSlot,
+          reason: bookForApptForm.reason,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Appointment booked successfully for the patient");
+        resetBookForApptForm();
+        fetchData();
+      } else {
+        alert(data.message || "Failed to book appointment");
+      }
+    } catch (error) {
+      alert("Error booking appointment");
     }
   };
 
@@ -5489,7 +5692,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {currentTab === "doctors" && (
         <div className="tab-pane-container">
-          <div className="card-header-row">
+          {/* <div className="card-header-row">
             <h3>Medical Officers Directory</h3>
             <button
               onClick={() =>
@@ -5500,6 +5703,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <Plus size={16} />
               <span>Add Doctor Account</span>
             </button>
+          </div> */}
+
+          <div className="card-header-row">
+            <h3>Medical Officers Directory</h3>
+            {!showDoctorForm && (
+              <button
+                onClick={handleOpenAddDoctor}
+                className="btn btn-primary btn-sm"
+              >
+                <Plus size={16} />
+                <span>Add Doctor Account</span>
+              </button>
+            )}
           </div>
 
           {showDoctorForm && (
@@ -6088,6 +6304,185 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {currentTab === "patients" && (
         <div className="tab-pane-container">
+          {/* <div className="card-header-row">
+            <h3>Registered Patients</h3>
+            <button
+              onClick={() =>
+                showPatientForm ? resetPatientForm() : handleOpenAddPatient()
+              }
+              className="btn btn-primary btn-sm"
+            >
+              <UserPlus size={16} />
+              <span>Add Patient</span>
+            </button>
+          </div> */}
+
+          <div className="card-header-row">
+            <h3>Registered Patients</h3>
+            {!showPatientForm && (
+              <button
+                onClick={handleOpenAddPatient}
+                className="btn btn-primary btn-sm"
+              >
+                <UserPlus size={16} />
+                <span>Add Patient</span>
+              </button>
+            )}
+          </div>
+
+          {showPatientForm && (
+            <form
+              onSubmit={handleSubmitPatient}
+              className="card inline-form-card fade-in"
+            >
+              <h4>
+                {editingPatientId
+                  ? "Patient Already Registered!"
+                  : "Register New Patient"}
+              </h4>
+
+              {phoneAutoMatched && (
+                <div className="patient-match-notice">
+                  A patient with this phone number already exists — Do you need
+                  to book appointment!
+                </div>
+              )}
+
+              <div className="form-grid-three">
+                <div className="form-group">
+                  <label className="form-label">Phone Number</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    required
+                    value={patientForm.phoneNumber}
+                    onChange={(e) => handlePatientPhoneChange(e.target.value)}
+                    placeholder="9876543210"
+                    minLength={10}
+                    maxLength={10}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    required
+                    value={patientForm.name}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, name: e.target.value })
+                    }
+                    placeholder="e.g. Jane Doe"
+                  />
+                </div>
+                <div className="form-group grid-span-2-col">
+                  <label className="form-label">Place</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    required
+                    value={patientForm.address}
+                    onChange={(e) =>
+                      setPatientForm({
+                        ...patientForm,
+                        address: e.target.value,
+                      })
+                    }
+                    placeholder="Street address, City, ZIP Code"
+                  />
+                </div>
+              </div>
+              <div className="form-actions-row">
+                {phoneAutoMatched ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => handleGoToBookAppointment(editingPatientId!)}
+                  >
+                    Book Appointment for Patient
+                  </button>
+                ) : (
+                  <button type="submit" className="btn btn-primary">
+                    {editingPatientId
+                      ? "Save Changes"
+                      : "Create Patient Account"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={resetPatientForm}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+              {/* <div className="form-actions-row">
+                <button type="submit" className="btn btn-primary">
+                  {editingPatientId ? "Save Changes" : "Create Patient Account"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetPatientForm}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div> */}
+            </form>
+          )}
+
+          {patients.length === 0 ? (
+            <p className="no-data-text">
+              No patients registered in the database.
+            </p>
+          ) : (
+            <div className="table-responsive fade-in">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Patient Name</th>
+                    <th>Phone Number</th>
+                    <th>Address</th>
+                    <th>Joined Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {patients.map((pat) => (
+                    <tr key={pat._id}>
+                      <td className="strong-text">{pat.user?.name || "N/A"}</td>
+                      <td>{pat.user?.phoneNumber || "N/A"}</td>
+                      <td>{pat.address}</td>
+                      <td>{new Date(pat.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <div className="table-action-buttons">
+                          <button
+                            onClick={() => handleOpenEditPatient(pat)}
+                            className="btn btn-secondary btn-sm"
+                            title="Edit Patient"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePatient(pat._id)}
+                            className="btn btn-danger btn-sm"
+                            title="Delete Patient"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* {currentTab === "patients" && (
+        <div className="tab-pane-container">
           <div className="card-header-row">
             <h3>Registered Patients</h3>
             <button
@@ -6221,9 +6616,237 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
         </div>
-      )}
+      )} */}
 
       {currentTab === "appointments" && (
+        <div className="tab-pane-container">
+          {/* <div className="card-header-row">
+            <h3>Patient Appointment Schedule</h3>
+            <button
+              onClick={() =>
+                showBookForApptForm
+                  ? resetBookForApptForm()
+                  : setShowBookForApptForm(true)
+              }
+              className="btn btn-primary btn-sm"
+            >
+              <Plus size={16} />
+              <span>Book Appointment</span>
+            </button>
+          </div> */}
+
+          <div className="card-header-row">
+            <h3>Patient Appointment Schedule</h3>
+            {!showBookForApptForm && (
+              <button
+                onClick={() => setShowBookForApptForm(true)}
+                className="btn btn-primary btn-sm"
+              >
+                <Plus size={16} />
+                <span>Book Appointment</span>
+              </button>
+            )}
+          </div>
+
+          {showBookForApptForm && (
+            <div className="centered-form-pane fade-in">
+              <div className="register-card booking-form-card">
+                <div className="login-header">
+                  <div className="login-logo-circle">
+                    <Stethoscope size={32} color="#0284c7" />
+                  </div>
+                  <h1>Book an Appointment</h1>
+                  <p>
+                    Select a registered patient, then choose a specialty and
+                    doctor to schedule their consultation.
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={handleSubmitBookForAppt}
+                  className="register-grid-form"
+                >
+                  <div className="form-group grid-col-2">
+                    <label className="form-label">Select Patient</label>
+                    <select
+                      className="form-control"
+                      required
+                      value={bookForApptForm.patientId}
+                      onChange={(e) =>
+                        setBookForApptForm({
+                          ...bookForApptForm,
+                          patientId: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">-- Select Patient --</option>
+                      {patients.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.user?.name} ({p.user?.phoneNumber})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group grid-col-2">
+                    <label className="form-label">Specialty / Department</label>
+                    <div className="specialty-chip-group">
+                      {DEPARTMENTS.map((dept) => (
+                        <button
+                          key={dept}
+                          type="button"
+                          className={`specialty-chip ${bookForApptDept === dept ? "active" : ""}`}
+                          onClick={() => {
+                            setBookForApptDept(dept);
+                            setBookForApptForm({
+                              ...bookForApptForm,
+                              doctorId: "",
+                              timeSlot: "",
+                            });
+                          }}
+                        >
+                          {dept}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="form-group grid-col-2">
+                    <label className="form-label">Select Doctor</label>
+                    <select
+                      className="form-control"
+                      required
+                      disabled={!bookForApptDept}
+                      value={bookForApptForm.doctorId}
+                      onChange={(e) =>
+                        setBookForApptForm({
+                          ...bookForApptForm,
+                          doctorId: e.target.value,
+                          timeSlot: "",
+                        })
+                      }
+                    >
+                      <option value="">
+                        {!bookForApptDept
+                          ? "Select a specialty first"
+                          : bookForApptFilteredDoctors.length === 0
+                            ? "No doctors available in this specialty"
+                            : "-- Select Doctor --"}
+                      </option>
+                      {bookForApptFilteredDoctors.map((doc) => (
+                        <option key={doc._id} value={doc._id}>
+                          Dr. {doc.user?.name} • {doc.qualification} • ₹
+                          {doc.consultationFee}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Preferred Date</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      required
+                      min={
+                        new Date(Date.now() + 24 * 60 * 60 * 1000)
+                          .toISOString()
+                          .split("T")[0]
+                      }
+                      value={bookForApptForm.date}
+                      onChange={(e) =>
+                        setBookForApptForm({
+                          ...bookForApptForm,
+                          date: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Time Slot</label>
+                    {bookForApptDocInfo?.availability &&
+                    bookForApptDocInfo.availability.length > 0 ? (
+                      <select
+                        className="form-control"
+                        required
+                        value={bookForApptForm.timeSlot}
+                        onChange={(e) =>
+                          setBookForApptForm({
+                            ...bookForApptForm,
+                            timeSlot: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">-- Choose Time Slot --</option>
+                        {bookForApptDocInfo.availability.map((av: any) => (
+                          <optgroup key={av._id} label={av.day}>
+                            {av.slots.map((slot: string, sIdx: number) => (
+                              <option key={sIdx} value={`${av.day}: ${slot}`}>
+                                {av.day} - {slot}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        className="form-control"
+                        disabled
+                        required
+                        value=""
+                      >
+                        <option value="">
+                          {bookForApptForm.doctorId
+                            ? "Doctor has no availability configured"
+                            : "Select a doctor first"}
+                        </option>
+                      </select>
+                    )}
+                  </div>
+
+                  <div className="form-group grid-col-2">
+                    <label className="form-label">
+                      Symptoms / Reason for Consultation
+                    </label>
+                    <textarea
+                      className="form-control"
+                      required
+                      rows={3}
+                      placeholder="Explain the patient's symptoms briefly..."
+                      value={bookForApptForm.reason}
+                      onChange={(e) =>
+                        setBookForApptForm({
+                          ...bookForApptForm,
+                          reason: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary register-submit-btn grid-col-2"
+                  >
+                    Book Appointment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetBookForApptForm}
+                    className="btn btn-secondary grid-col-2"
+                  >
+                    Cancel
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* existing reschedule form + appointments table continue below, unchanged */}
+
+          {/* existing edit-appointment form and appointments table stay unchanged below this */}
+
+          {/* {currentTab === "appointments" && (
         <div className="tab-pane-container">
           <h3>Patient Appointment Schedule</h3>
 
@@ -6323,9 +6946,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
               </div>
             </form>
-          )}
+          )} */}
 
-          {appointments.length === 0 ? (
+          {/* {appointments.length === 0 ? (
             <p className="no-data-text">No appointments booked.</p>
           ) : (
             <div className="table-responsive fade-in">
@@ -6406,6 +7029,193 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               </button>
                             )}
                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )} */}
+
+          {viewingAppt && (
+            <div className="card inline-form-card fade-in appt-detail-card">
+              <div className="appt-detail-header">
+                <h4>Appointment Details</h4>
+                <span
+                  className={`badge badge-${
+                    viewingAppt.status === "confirmed"
+                      ? "success"
+                      : viewingAppt.status === "pending"
+                        ? "warning"
+                        : viewingAppt.status === "completed"
+                          ? "info"
+                          : "danger"
+                  }`}
+                >
+                  {viewingAppt.status}
+                </span>
+              </div>
+
+              <div className="appt-detail-grid">
+                <div className="appt-detail-item">
+                  <span className="doctor-mobile-label">Patient</span>
+                  <span className="doctor-mobile-value">
+                    {viewingAppt.patient?.user?.name || "N/A"}
+                  </span>
+                </div>
+                <div className="appt-detail-item">
+                  <span className="doctor-mobile-label">Phone</span>
+                  <span className="doctor-mobile-value">
+                    {viewingAppt.patient?.user?.phoneNumber || "N/A"}
+                  </span>
+                </div>
+                <div className="appt-detail-item">
+                  <span className="doctor-mobile-label">Doctor</span>
+                  <span className="doctor-mobile-value">
+                    Dr. {viewingAppt.doctor?.user?.name || "N/A"}
+                  </span>
+                </div>
+                <div className="appt-detail-item">
+                  <span className="doctor-mobile-label">Department</span>
+                  <span className="doctor-mobile-value">
+                    {viewingAppt.doctor?.department || "N/A"}
+                  </span>
+                </div>
+                <div className="appt-detail-item">
+                  <span className="doctor-mobile-label">Date & Slot</span>
+                  <span className="doctor-mobile-value">
+                    {new Date(viewingAppt.date).toLocaleDateString()} -{" "}
+                    {viewingAppt.timeSlot}
+                  </span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <span className="doctor-mobile-label">Reason for Visit</span>
+                <p className="appt-detail-reason">{viewingAppt.reason}</p>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Notes</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  placeholder="Add any notes for this appointment..."
+                  value={viewApptNotes}
+                  onChange={(e) => setViewApptNotes(e.target.value)}
+                />
+              </div>
+
+              <div className="form-actions-row">
+                {viewingAppt.status === "pending" && (
+                  <button
+                    onClick={() =>
+                      handleSaveApptNotes(viewingAppt._id, "confirmed")
+                    }
+                    className="btn btn-primary"
+                  >
+                    <Check size={14} />
+                    <span>Confirm Appointment</span>
+                  </button>
+                )}
+                {(viewingAppt.status === "pending" ||
+                  viewingAppt.status === "confirmed") && (
+                  <button
+                    onClick={() => {
+                      handleCloseViewAppointment();
+                      handleOpenEditAppointment(viewingAppt);
+                    }}
+                    className="btn btn-secondary"
+                  >
+                    <Edit2 size={14} />
+                    <span>Reschedule</span>
+                  </button>
+                )}
+                {viewingAppt.status !== "cancelled" &&
+                  viewingAppt.status !== "completed" && (
+                    <button
+                      onClick={() =>
+                        handleSaveApptNotes(viewingAppt._id, "cancelled")
+                      }
+                      className="btn btn-danger"
+                    >
+                      <X size={14} />
+                      <span>Cancel Appointment</span>
+                    </button>
+                  )}
+                <button
+                  onClick={() =>
+                    handleSaveApptNotes(viewingAppt._id, viewingAppt.status)
+                  }
+                  className="btn btn-secondary"
+                >
+                  Save Notes
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseViewAppointment}
+                  className="btn btn-secondary"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+
+          {appointments.length === 0 ? (
+            <p className="no-data-text">No appointments booked.</p>
+          ) : (
+            <div className="table-responsive fade-in">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Reason</th>
+                    <th>Date & Slot</th>
+                    <th>Status</th>
+                    <th>Manage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.map((appt) => (
+                    <tr key={appt._id}>
+                      <td className="strong-text">
+                        {appt.patient?.user?.name || "N/A"}
+                      </td>
+                      <td>
+                        Dr. {appt.doctor?.user?.name || "N/A"} (
+                        {appt.doctor?.department})
+                      </td>
+                      <td>{appt.reason}</td>
+                      <td>
+                        {new Date(appt.date).toLocaleDateString()} -{" "}
+                        {appt.timeSlot}
+                      </td>
+                      <td>
+                        <span
+                          className={`badge badge-${
+                            appt.status === "confirmed"
+                              ? "success"
+                              : appt.status === "pending"
+                                ? "warning"
+                                : appt.status === "completed"
+                                  ? "info"
+                                  : "danger"
+                          }`}
+                        >
+                          {appt.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => handleOpenViewAppointment(appt)}
+                          className="btn btn-secondary btn-sm"
+                          title="View Appointment"
+                        >
+                          <Eye size={14} />
+                          <span>View</span>
+                        </button>
                       </td>
                     </tr>
                   ))}

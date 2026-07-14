@@ -11,15 +11,17 @@ const userSchema = new Schema(
       type: String,
       required: [false, "Please add an email"],
       unique: true,
-      // match: [
-      //   /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      //   "Please add a valid email",
-      // ],
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        "Please add a valid email",
+      ],
     },
     password: {
       type: String,
       required: [false, "Please add a password"],
+      unique: true,
       minlength: 6,
+      maxlength: 10,
       select: false,
     },
     role: {
@@ -30,6 +32,9 @@ const userSchema = new Schema(
     phoneNumber: {
       type: String,
       required: [true, "Please add a phone number"],
+      unique: true,
+      minlength: 10,
+      maxlength: 10,
     },
   },
   {

@@ -1308,3 +1308,48 @@
 .doctor-mobile-actions .btn {
   flex: 1;
 }
+
+.patient-match-notice {
+  background-color: var(--color-warning-bg);
+  color: #92400e;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--border-radius-sm);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.appt-detail-card {
+  border: 1.5px solid var(--primary-light);
+}
+
+.appt-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.appt-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.appt-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.appt-detail-reason {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-sm);
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
