@@ -1,6 +1,6 @@
-import React from 'react';
-import { useAuth } from '../context/AuthContext';
-import { LogOut, Activity, User } from 'lucide-react';
+import React from "react";
+import { useAuth } from "../context/AuthContext";
+import { LogOut, Activity, User } from "lucide-react";
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -20,7 +20,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
           <span>Hospital Management System</span>
         </div>
       </div>
-      
+
       {user && (
         <div className="navbar-user">
           <div className="user-info">

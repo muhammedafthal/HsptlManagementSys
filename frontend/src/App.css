@@ -1331,18 +1331,21 @@
 }
 
 .appt-detail-grid {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  /* justify-content: space-between; */
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   margin-bottom: 1.25rem;
   padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--border-light);
-}
+} 
 
 .appt-detail-item {
-  display: flex;
+  /* display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.2rem; */
+  flex: 1 1 180px;
 }
 
 .appt-detail-reason {
@@ -1352,4 +1355,45 @@
   padding: 0.75rem;
   font-size: 0.9rem;
   color: var(--text-main);
+}
+
+.appt-token-card {
+  margin-top: 1rem;
+  border: 1.5px solid var(--primary-light);
+  border-radius: var(--border-radius-sm);
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+}
+
+.appt-token-header {
+  display: flex;
+  align-items: center;
+  /* justify-content: space-between; */
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.appt-token-label {
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+.appt-token-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.appt-token-details {
+  display: grid;
+  justify-content: space-between;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.appt-token-print-btn {
+  margin-top: 0.75rem;
+  width: 100%;
+  justify-content: center;
 }

@@ -1,4755 +1,4 @@
-// import React, { useState, useEffect } from "react";
-// import { useAuth } from "../context/AuthContext";
-// import {
-//   Users,
-//   UserPlus,
-//   Calendar,
-//   DollarSign,
-//   CreditCard,
-//   FilePlus,
-//   Plus,
-//   Trash2,
-//   Check,
-//   X,
-//   RefreshCw,
-//   AlignCenter,
-// } from "lucide-react";
-
-// interface AdminDashboardProps {
-//   currentTab: string;
-// }
-
-// export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-//   currentTab,
-// }) => {
-//   const { token, apiUrl } = useAuth();
-
-//   // States
-//   const [stats, setStats] = useState({
-//     doctorsCount: 0,
-//     patientsCount: 0,
-//     appointmentsCount: 0,
-//     totalRevenue: 0,
-//     unpaidBills: 0,
-//   });
-
-//   const [doctors, setDoctors] = useState<any[]>([]);
-//   const [patients, setPatients] = useState<any[]>([]);
-//   const [appointments, setAppointments] = useState<any[]>([]);
-//   const [bills, setBills] = useState<any[]>([]);
-//   const [loading, setLoading] = useState(true);
-
-//   // Forms States
-//   const [showDoctorForm, setShowDoctorForm] = useState(false);
-//   const [doctorForm, setDoctorForm] = useState({
-//     name: "",
-//     email: "",
-//     password: "",
-//     phoneNumber: "",
-//     specialization: "",
-//     department: "General Medicine",
-//     qualification: "",
-//     experience: 5,
-//     consultationFee: 500,
-//     availabilityDay: "Monday",
-//     availabilitySlots: "09:00 - 13:00, 14:00 - 17:00",
-//   });
-
-//   const [showBillForm, setShowBillForm] = useState(false);
-//   const [billForm, setBillForm] = useState({
-//     patientId: "",
-//     appointmentId: "",
-//     itemDesc: "",
-//     itemAmount: 0,
-//     items: [] as { description: string; amount: number }[],
-//     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-//       .toISOString()
-//       .split("T")[0],
-//   });
-
-//   const fetchData = async () => {
-//     setLoading(true);
-//     try {
-//       const headers = { Authorization: `Bearer ${token}` };
-
-//       // Fetch Doctors
-//       const resDocs = await fetch(`${apiUrl}/doctors`, { headers });
-//       const dataDocs = await resDocs.json();
-//       const docsList = dataDocs.success ? dataDocs.data : [];
-//       setDoctors(docsList);
-
-//       // Fetch Patients
-//       const resPatients = await fetch(`${apiUrl}/patients`, { headers });
-//       const dataPatients = await resPatients.json();
-//       const patientsList = dataPatients.success ? dataPatients.data : [];
-//       setPatients(patientsList);
-
-//       // Fetch Appointments
-//       const resAppointments = await fetch(`${apiUrl}/appointments`, {
-//         headers,
-//       });
-//       const dataAppointments = await resAppointments.json();
-//       const apptsList = dataAppointments.success ? dataAppointments.data : [];
-//       setAppointments(apptsList);
-
-//       // Fetch Bills
-//       const resBills = await fetch(`${apiUrl}/bills`, { headers });
-//       const dataBills = await resBills.json();
-//       const billsList = dataBills.success ? dataBills.data : [];
-//       setBills(billsList);
-
-//       // Calculate Stats
-//       const revenue = billsList
-//         .filter((b: any) => b.paymentStatus === "paid")
-//         .reduce((sum: number, b: any) => sum + b.totalAmount, 0);
-
-//       const unpaidCount = billsList.filter(
-//         (b: any) => b.paymentStatus === "unpaid",
-//       ).length;
-
-//       setStats({
-//         doctorsCount: docsList.length,
-//         patientsCount: patientsList.length,
-//         appointmentsCount: apptsList.length,
-//         totalRevenue: revenue,
-//         unpaidBills: unpaidCount,
-//       });
-//     } catch (err) {
-//       console.error("Error loading admin dashboard data:", err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (token) {
-//       fetchData();
-//     }
-//   }, [token, currentTab]);
-
-//   // Doctor CRUD
-//   const handleCreateDoctor = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     try {
-//       const slotsArray = doctorForm.availabilitySlots
-//         .split(",")
-//         .map((s) => s.trim());
-//       const payload = {
-//         name: doctorForm.name,
-//         email: doctorForm.email,
-//         password: doctorForm.password,
-//         phoneNumber: doctorForm.phoneNumber,
-//         specialization: doctorForm.specialization,
-//         department: doctorForm.department,
-//         qualification: doctorForm.qualification,
-//         experience: Number(doctorForm.experience),
-//         consultationFee: Number(doctorForm.consultationFee),
-//         availability: [
-//           {
-//             day: doctorForm.availabilityDay,
-//             slots: slotsArray,
-//           },
-//         ],
-//       };
-
-//       const res = await fetch(`${apiUrl}/doctors`, {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify(payload),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Doctor account created successfully");
-//         setShowDoctorForm(false);
-//         setDoctorForm({
-//           name: "",
-//           email: "",
-//           password: "",
-//           phoneNumber: "",
-//           specialization: "",
-//           department: "General Medicine",
-//           qualification: "",
-//           experience: 5,
-//           consultationFee: 500,
-//           availabilityDay: "Monday",
-//           availabilitySlots: "09:00 - 13:00, 14:00 - 17:00",
-//         });
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to create doctor");
-//       }
-//     } catch (error) {
-//       alert("Error creating doctor");
-//     }
-//   };
-
-//   const handleDeleteDoctor = async (docId: string) => {
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to delete this doctor? All associated user credentials will be removed.",
-//       )
-//     )
-//       return;
-//     try {
-//       const res = await fetch(`${apiUrl}/doctors/${docId}`, {
-//         method: "DELETE",
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Doctor deleted successfully");
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to delete doctor");
-//       }
-//     } catch (err) {
-//       alert("Error deleting doctor");
-//     }
-//   };
-
-//   // Appointment status toggle
-//   const handleUpdateAppointment = async (apptId: string, status: string) => {
-//     try {
-//       const res = await fetch(`${apiUrl}/appointments/${apptId}/status`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ status }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to update appointment");
-//       }
-//     } catch (err) {
-//       alert("Error updating status");
-//     }
-//   };
-
-//   // Billing Actions
-//   const handleAddBillItem = () => {
-//     if (!billForm.itemDesc || billForm.itemAmount <= 0) return;
-//     setBillForm({
-//       ...billForm,
-//       items: [
-//         ...billForm.items,
-//         { description: billForm.itemDesc, amount: Number(billForm.itemAmount) },
-//       ],
-//       itemDesc: "",
-//       itemAmount: 0,
-//     });
-//   };
-
-//   const handleCreateBill = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (billForm.items.length === 0) {
-//       alert("Please add at least one item to the invoice");
-//       return;
-//     }
-//     try {
-//       const res = await fetch(`${apiUrl}/bills`, {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//           patientId: billForm.patientId,
-//           appointmentId: billForm.appointmentId || undefined,
-//           items: billForm.items,
-//           dueDate: billForm.dueDate,
-//         }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Invoice generated successfully");
-//         setShowBillForm(false);
-//         setBillForm({
-//           patientId: "",
-//           appointmentId: "",
-//           itemDesc: "",
-//           itemAmount: 0,
-//           items: [],
-//           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-//             .toISOString()
-//             .split("T")[0],
-//         });
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to generate invoice");
-//       }
-//     } catch (err) {
-//       alert("Error generating bill");
-//     }
-//   };
-
-//   const handleToggleBillStatus = async (
-//     billId: string,
-//     currentStatus: string,
-//   ) => {
-//     const nextStatus = currentStatus === "paid" ? "unpaid" : "paid";
-//     try {
-//       const res = await fetch(`${apiUrl}/bills/${billId}/status`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ paymentStatus: nextStatus }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         fetchData();
-//       }
-//     } catch (err) {
-//       alert("Error updating payment status");
-//     }
-//   };
-
-//   if (loading && doctors.length === 0) {
-//     return (
-//       <div className="dashboard-loading">
-//         <RefreshCw className="animate-spin" size={32} color="#0284c7" />
-//         <p>Loading dashboard metrics...</p>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="dashboard-content fade-in">
-//       <div className="dashboard-title-row">
-//         <h1>Admin Control Room</h1>
-//         <button onClick={fetchData} className="btn btn-secondary btn-sm">
-//           <RefreshCw size={16} />
-//           <span>Refresh Data</span>
-//         </button>
-//       </div>
-
-//       {currentTab === "overview" && (
-//         <>
-//           {/* Summary Cards */}
-//           <div className="stats-grid">
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper blue">
-//                 <UserPlus size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.doctorsCount}</h3>
-//                 <p>Doctors On Duty</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper green">
-//                 <Users size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.patientsCount}</h3>
-//                 <p>Registered Patients</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper warning">
-//                 <Calendar size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.appointmentsCount}</h3>
-//                 <p>Appointments Booked</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper info">
-//                 <DollarSign size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>₹{stats.totalRevenue.toLocaleString()}</h3>
-//                 <p>Revenue Collected</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper danger">
-//                 <CreditCard size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.unpaidBills}</h3>
-//                 <p>Pending Invoices</p>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Quick Schedule Overview */}
-//           <div className="dashboard-layout-grid">
-//             <div className="card grid-span-2">
-//               <div className="card-header-row">
-//                 <h3>Recent Appointments</h3>
-//               </div>
-//               {appointments.length === 0 ? (
-//                 <p className="no-data-text">No appointments recorded yet.</p>
-//               ) : (
-//                 <div className="table-responsive">
-//                   <table className="table">
-//                     <thead>
-//                       <tr>
-//                         <th>Patient</th>
-//                         <th>Doctor</th>
-//                         <th>Date & Time</th>
-//                         <th>Status</th>
-//                       </tr>
-//                     </thead>
-//                     <tbody>
-//                       {appointments.slice(0, 5).map((appt) => (
-//                         <tr key={appt._id}>
-//                           <td>{appt.patient?.user?.name || "N/A"}</td>
-//                           <td>Dr. {appt.doctor?.user?.name || "N/A"}</td>
-//                           <td>
-//                             {new Date(appt.date).toLocaleDateString()} at{" "}
-//                             {appt.timeSlot}
-//                           </td>
-//                           <td>
-//                             <span
-//                               className={`badge badge-${
-//                                 appt.status === "confirmed"
-//                                   ? "success"
-//                                   : appt.status === "pending"
-//                                     ? "warning"
-//                                     : appt.status === "completed"
-//                                       ? "info"
-//                                       : "danger"
-//                               }`}
-//                             >
-//                               {appt.status}
-//                             </span>
-//                           </td>
-//                         </tr>
-//                       ))}
-//                     </tbody>
-//                   </table>
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-//         </>
-//       )}
-
-//       {currentTab === "doctors" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Medical Officers Directory</h3>
-//             <button
-//               onClick={() => setShowDoctorForm(!showDoctorForm)}
-//               className="btn btn-primary btn-sm"
-//             >
-//               <Plus size={16} />
-//               <span>Add Doctor Account</span>
-//             </button>
-//           </div>
-
-//           {showDoctorForm && (
-//             <form
-//               onSubmit={handleCreateDoctor}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>Register New Doctor</h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Full Name</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.name}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, name: e.target.value })
-//                     }
-//                     placeholder="e.g. John Watson"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Email Address</label>
-//                   <input
-//                     type="email"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.email}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, email: e.target.value })
-//                     }
-//                     placeholder="drjohn@hospital.com"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Password</label>
-//                   <input
-//                     type="password"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.password}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, password: e.target.value })
-//                     }
-//                     placeholder="••••••"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Phone Number</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.phoneNumber}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         phoneNumber: e.target.value,
-//                       })
-//                     }
-//                     placeholder="9998887776"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Specialization</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.specialization}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         specialization: e.target.value,
-//                       })
-//                     }
-//                     placeholder="e.g. Cardiology specialist"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Department</label>
-//                   <select
-//                     className="form-control"
-//                     value={doctorForm.department}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         department: e.target.value,
-//                       })
-//                     }
-//                   >
-//                     <option value="Cardiology">Cardiology</option>
-//                     <option value="Neurology">Neurology</option>
-//                     <option value="Pediatrics">Pediatrics</option>
-//                     <option value="General Medicine">General Medicine</option>
-//                     <option value="Orthopedics">Orthopedics</option>
-//                     <option value="Critical Care">Critical care</option>
-//                     <option value="Dermatology">Dermatology</option>
-//                   </select>
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Qualifications</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.qualification}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         qualification: e.target.value,
-//                       })
-//                     }
-//                     placeholder="e.g. MBBS, MD"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Years of Experience</label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.experience}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         experience: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Consultation Fee (₹)</label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.consultationFee}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         consultationFee: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Availability Day</label>
-//                   <select
-//                     className="form-control"
-//                     value={doctorForm.availabilityDay}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         availabilityDay: e.target.value,
-//                       })
-//                     }
-//                   >
-//                     <option value="Monday">Monday</option>
-//                     <option value="Tuesday">Tuesday</option>
-//                     <option value="Wednesday">Wednesday</option>
-//                     <option value="Thursday">Thursday</option>
-//                     <option value="Friday">Friday</option>
-//                     <option value="Saturday">Saturday</option>
-//                     <option value="Sunday">Sunday</option>
-//                   </select>
-//                 </div>
-//                 <div className="form-group grid-span-2-col">
-//                   <label className="form-label">Slots (comma separated)</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.availabilitySlots}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         availabilitySlots: e.target.value,
-//                       })
-//                     }
-//                     placeholder="09:00 - 11:00, 15:00 - 17:00"
-//                   />
-//                 </div>
-//               </div>
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   Create Doctor Profile
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={() => setShowDoctorForm(false)}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {doctors.length === 0 ? (
-//             <p className="no-data-text">No doctors registered yet.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Doctor Name</th>
-//                     <th>Department</th>
-//                     <th>Speciality</th>
-//                     <th>Qualifications</th>
-//                     <th>Experience</th>
-//                     <th>Fee (₹)</th>
-//                     <th>Availability</th>
-//                     <th>Actions</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {doctors.map((doc) => (
-//                     <tr key={doc._id}>
-//                       <td className="strong-text">
-//                         Dr. {doc.user?.name || "N/A"}
-//                       </td>
-//                       <td>{doc.department}</td>
-//                       <td>{doc.specialization}</td>
-//                       <td>{doc.qualification}</td>
-//                       <td>{doc.experience} Years</td>
-//                       <td>₹{doc.consultationFee}</td>
-//                       <td>
-//                         {doc.availability?.map((av: any, idx: number) => (
-//                           <div key={idx} className="availability-slot-badge">
-//                             <strong>{av.day}</strong>: {av.slots.join(", ")}
-//                           </div>
-//                         ))}
-//                       </td>
-//                       <td>
-//                         <button
-//                           onClick={() => handleDeleteDoctor(doc._id)}
-//                           className="btn btn-danger btn-sm"
-//                           title="Delete Profile"
-//                         >
-//                           <Trash2 size={14} />
-//                         </button>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "patients" && (
-//         <div className="tab-pane-container">
-//           <h3>Registered Patients</h3>
-//           {patients.length === 0 ? (
-//             <p className="no-data-text">
-//               No patients registered in the database.
-//             </p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Patient Name</th>
-//                     <th>Gender</th>
-//                     <th>Date of Birth</th>
-//                     <th>Blood Group</th>
-//                     <th>Phone Number</th>
-//                     <th>Address</th>
-//                     <th>Joined Date</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {patients.map((pat) => (
-//                     <tr key={pat._id}>
-//                       <td className="strong-text">{pat.user?.name || "N/A"}</td>
-//                       <td>{pat.gender}</td>
-//                       <td>{new Date(pat.dateOfBirth).toLocaleDateString()}</td>
-//                       <td className="blood-type">{pat.bloodGroup}</td>
-//                       <td>{pat.user?.phoneNumber || "N/A"}</td>
-//                       <td>{pat.address}</td>
-//                       <td>{new Date(pat.createdAt).toLocaleDateString()}</td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "appointments" && (
-//         <div className="tab-pane-container">
-//           <h3>Patient Appointment Schedule</h3>
-//           {appointments.length === 0 ? (
-//             <p className="no-data-text">No appointments booked.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Patient</th>
-//                     <th>Doctor</th>
-//                     <th>Reason</th>
-//                     <th>Date & Slot</th>
-//                     <th>Status</th>
-//                     <th>Manage</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {appointments.map((appt) => (
-//                     <tr key={appt._id}>
-//                       <td className="strong-text">
-//                         {appt.patient?.user?.name || "N/A"}
-//                       </td>
-//                       <td>
-//                         Dr. {appt.doctor?.user?.name || "N/A"} (
-//                         {appt.doctor?.department})
-//                       </td>
-//                       <td>{appt.reason}</td>
-//                       <td>
-//                         {new Date(appt.date).toLocaleDateString()} -{" "}
-//                         {appt.timeSlot}
-//                       </td>
-//                       <td>
-//                         <span
-//                           className={`badge badge-${
-//                             appt.status === "confirmed"
-//                               ? "success"
-//                               : appt.status === "pending"
-//                                 ? "warning"
-//                                 : appt.status === "completed"
-//                                   ? "info"
-//                                   : "danger"
-//                           }`}
-//                         >
-//                           {appt.status}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         <div className="table-action-buttons">
-//                           {appt.status === "pending" && (
-//                             <button
-//                               onClick={() =>
-//                                 handleUpdateAppointment(appt._id, "confirmed")
-//                               }
-//                               className="btn btn-secondary btn-sm text-success"
-//                               title="Confirm Appointment"
-//                             >
-//                               <Check size={14} />
-//                             </button>
-//                           )}
-//                           {appt.status !== "cancelled" &&
-//                             appt.status !== "completed" && (
-//                               <button
-//                                 onClick={() =>
-//                                   handleUpdateAppointment(appt._id, "cancelled")
-//                                 }
-//                                 className="btn btn-secondary btn-sm text-danger"
-//                                 title="Cancel Appointment"
-//                               >
-//                                 <X size={14} />
-//                               </button>
-//                             )}
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "bills" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Hospital Billings & Invoices</h3>
-//             <button
-//               onClick={() => setShowBillForm(!showBillForm)}
-//               className="btn btn-primary btn-sm"
-//             >
-//               <FilePlus size={16} />
-//               <span>Generate New Invoice</span>
-//             </button>
-//           </div>
-
-//           {showBillForm && (
-//             <form
-//               onSubmit={handleCreateBill}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>Generate Invoice</h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Select Patient</label>
-//                   <select
-//                     className="form-control"
-//                     required
-//                     value={billForm.patientId}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, patientId: e.target.value })
-//                     }
-//                   >
-//                     <option value="">-- Select Patient --</option>
-//                     {patients.map((p) => (
-//                       <option key={p._id} value={p._id}>
-//                         {p.user?.name} ({p.user?.phoneNumber})
-//                       </option>
-//                     ))}
-//                   </select>
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Due Date</label>
-//                   <input
-//                     type="date"
-//                     className="form-control"
-//                     required
-//                     value={billForm.dueDate}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, dueDate: e.target.value })
-//                     }
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* Add line item */}
-//               <div className="billing-line-item-creator">
-//                 <h5>Invoice Items</h5>
-//                 <div className="line-item-fields">
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     placeholder="Item description (e.g. Lab Test, Consultation)"
-//                     value={billForm.itemDesc}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, itemDesc: e.target.value })
-//                     }
-//                   />
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     placeholder="Amount (₹)"
-//                     value={billForm.itemAmount || ""}
-//                     onChange={(e) =>
-//                       setBillForm({
-//                         ...billForm,
-//                         itemAmount: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                   <button
-//                     type="button"
-//                     onClick={handleAddBillItem}
-//                     className="btn btn-secondary"
-//                   >
-//                     Add Item
-//                   </button>
-//                 </div>
-
-//                 {billForm.items.length > 0 && (
-//                   <div className="billing-items-list">
-//                     <h6>Added Items:</h6>
-//                     <ul>
-//                       {billForm.items.map((item, idx) => (
-//                         <li key={idx}>
-//                           <span>{item.description}</span>
-//                           <strong>₹{item.amount}</strong>
-//                         </li>
-//                       ))}
-//                     </ul>
-//                     <div className="bill-total-calc">
-//                       Total:{" "}
-//                       <strong>
-//                         ₹{billForm.items.reduce((s, i) => s + i.amount, 0)}
-//                       </strong>
-//                     </div>
-//                   </div>
-//                 )}
-//               </div>
-
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   Save and Issue Invoice
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={() => setShowBillForm(false)}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {bills.length === 0 ? (
-//             <p className="no-data-text">No invoices issued.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Invoice ID</th>
-//                     <th>Patient Name</th>
-//                     <th>Invoice Items</th>
-//                     <th>Total Amount (₹)</th>
-//                     <th>Due Date</th>
-//                     <th>Payment Status</th>
-//                     <th>Toggle Status</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {bills.map((bill) => (
-//                     <tr key={bill._id}>
-//                       <td>#{bill._id.substring(bill._id.length - 8)}</td>
-//                       <td className="strong-text">
-//                         {bill.patient?.user?.name || "N/A"}
-//                       </td>
-//                       <td>
-//                         {bill.items?.map((item: any, idx: number) => (
-//                           <div key={idx} className="bill-list-subitem">
-//                             • {item.description}: ₹{item.amount}
-//                           </div>
-//                         ))}
-//                       </td>
-//                       <td className="strong-text">₹{bill.totalAmount}</td>
-//                       <td>{new Date(bill.dueDate).toLocaleDateString()}</td>
-//                       <td>
-//                         <span
-//                           className={`badge badge-${bill.paymentStatus === "paid" ? "success" : "danger"}`}
-//                         >
-//                           {bill.paymentStatus}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         <button
-//                           onClick={() =>
-//                             handleToggleBillStatus(bill._id, bill.paymentStatus)
-//                           }
-//                           className={`btn btn-sm ${bill.paymentStatus === "paid" ? "btn-secondary" : "btn-primary"}`}
-//                         >
-//                           Mark as{" "}
-//                           {bill.paymentStatus === "paid" ? "Unpaid" : "Paid"}
-//                         </button>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default AdminDashboard;
-
-// import React, { useState, useEffect } from "react";
-// import { useAuth } from "../context/AuthContext";
-// import {
-//   Users,
-//   UserPlus,
-//   Calendar,
-//   DollarSign,
-//   CreditCard,
-//   FilePlus,
-//   Plus,
-//   Trash2,
-//   Edit2,
-//   Check,
-//   X,
-//   RefreshCw,
-// } from "lucide-react";
-
-// interface AdminDashboardProps {
-//   currentTab: string;
-// }
-
-// const emptyDoctorForm = {
-//   name: "",
-//   email: "",
-//   password: "",
-//   phoneNumber: "",
-//   specialization: "",
-//   department: "General Medicine",
-//   qualification: "",
-//   experience: 5,
-//   consultationFee: 500,
-//   availabilityDay: "Monday",
-//   availabilitySlots: "09:00 - 13:00, 14:00 - 17:00",
-// };
-
-// export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-//   currentTab,
-// }) => {
-//   const { token, apiUrl } = useAuth();
-
-//   // States
-//   const [stats, setStats] = useState({
-//     doctorsCount: 0,
-//     patientsCount: 0,
-//     appointmentsCount: 0,
-//     totalRevenue: 0,
-//     unpaidBills: 0,
-//   });
-
-//   const [doctors, setDoctors] = useState<any[]>([]);
-//   const [patients, setPatients] = useState<any[]>([]);
-//   const [appointments, setAppointments] = useState<any[]>([]);
-//   const [bills, setBills] = useState<any[]>([]);
-//   const [loading, setLoading] = useState(true);
-
-//   // Forms States
-//   const [showDoctorForm, setShowDoctorForm] = useState(false);
-//   const [editingDoctorId, setEditingDoctorId] = useState<string | null>(null);
-//   const [doctorForm, setDoctorForm] = useState(emptyDoctorForm);
-
-//   const [showBillForm, setShowBillForm] = useState(false);
-//   const [billForm, setBillForm] = useState({
-//     patientId: "",
-//     appointmentId: "",
-//     itemDesc: "",
-//     itemAmount: 0,
-//     items: [] as { description: string; amount: number }[],
-//     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-//       .toISOString()
-//       .split("T")[0],
-//   });
-
-//   const fetchData = async () => {
-//     setLoading(true);
-//     try {
-//       const headers = { Authorization: `Bearer ${token}` };
-
-//       // Fetch Doctors
-//       const resDocs = await fetch(`${apiUrl}/doctors`, { headers });
-//       const dataDocs = await resDocs.json();
-//       const docsList = dataDocs.success ? dataDocs.data : [];
-//       setDoctors(docsList);
-
-//       // Fetch Patients
-//       const resPatients = await fetch(`${apiUrl}/patients`, { headers });
-//       const dataPatients = await resPatients.json();
-//       const patientsList = dataPatients.success ? dataPatients.data : [];
-//       setPatients(patientsList);
-
-//       // Fetch Appointments
-//       const resAppointments = await fetch(`${apiUrl}/appointments`, {
-//         headers,
-//       });
-//       const dataAppointments = await resAppointments.json();
-//       const apptsList = dataAppointments.success ? dataAppointments.data : [];
-//       setAppointments(apptsList);
-
-//       // Fetch Bills
-//       const resBills = await fetch(`${apiUrl}/bills`, { headers });
-//       const dataBills = await resBills.json();
-//       const billsList = dataBills.success ? dataBills.data : [];
-//       setBills(billsList);
-
-//       // Calculate Stats
-//       const revenue = billsList
-//         .filter((b: any) => b.paymentStatus === "paid")
-//         .reduce((sum: number, b: any) => sum + b.totalAmount, 0);
-
-//       const unpaidCount = billsList.filter(
-//         (b: any) => b.paymentStatus === "unpaid",
-//       ).length;
-
-//       setStats({
-//         doctorsCount: docsList.length,
-//         patientsCount: patientsList.length,
-//         appointmentsCount: apptsList.length,
-//         totalRevenue: revenue,
-//         unpaidBills: unpaidCount,
-//       });
-//     } catch (err) {
-//       console.error("Error loading admin dashboard data:", err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (token) {
-//       fetchData();
-//     }
-//   }, [token, currentTab]);
-
-//   // Doctor CRUD
-//   const resetDoctorForm = () => {
-//     setDoctorForm(emptyDoctorForm);
-//     setEditingDoctorId(null);
-//     setShowDoctorForm(false);
-//   };
-
-//   const handleOpenAddDoctor = () => {
-//     setDoctorForm(emptyDoctorForm);
-//     setEditingDoctorId(null);
-//     setShowDoctorForm(true);
-//   };
-
-//   const handleOpenEditDoctor = (doc: any) => {
-//     const firstAvailability = doc.availability?.[0];
-//     setDoctorForm({
-//       name: doc.user?.name || "",
-//       email: doc.user?.email || "",
-//       password: "", // left blank; only sent if the admin types a new one
-//       phoneNumber: doc.user?.phoneNumber || "",
-//       specialization: doc.specialization || "",
-//       department: doc.department || "General Medicine",
-//       qualification: doc.qualification || "",
-//       experience: doc.experience ?? 5,
-//       consultationFee: doc.consultationFee ?? 500,
-//       availabilityDay: firstAvailability?.day || "Monday",
-//       availabilitySlots: firstAvailability?.slots?.join(", ") || "",
-//     });
-//     setEditingDoctorId(doc._id);
-//     setShowDoctorForm(true);
-//   };
-
-//   const handleSubmitDoctor = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     try {
-//       const slotsArray = doctorForm.availabilitySlots
-//         .split(",")
-//         .map((s) => s.trim())
-//         .filter(Boolean);
-
-//       const isEditing = Boolean(editingDoctorId);
-
-//       const payload: any = {
-//         name: doctorForm.name,
-//         email: doctorForm.email,
-//         phoneNumber: doctorForm.phoneNumber,
-//         specialization: doctorForm.specialization,
-//         department: doctorForm.department,
-//         qualification: doctorForm.qualification,
-//         experience: Number(doctorForm.experience),
-//         consultationFee: Number(doctorForm.consultationFee),
-//         availability: [
-//           {
-//             day: doctorForm.availabilityDay,
-//             slots: slotsArray,
-//           },
-//         ],
-//       };
-
-//       // Only send password if creating, or if the admin explicitly typed one while editing
-//       if (!isEditing || doctorForm.password) {
-//         payload.password = doctorForm.password;
-//       }
-
-//       const res = await fetch(
-//         isEditing
-//           ? `${apiUrl}/doctors/${editingDoctorId}`
-//           : `${apiUrl}/doctors`,
-//         {
-//           method: isEditing ? "PUT" : "POST",
-//           headers: {
-//             "Content-Type": "application/json",
-//             Authorization: `Bearer ${token}`,
-//           },
-//           body: JSON.stringify(payload),
-//         },
-//       );
-//       const data = await res.json();
-//       if (data.success) {
-//         alert(
-//           isEditing
-//             ? "Doctor profile updated successfully"
-//             : "Doctor account created successfully",
-//         );
-//         resetDoctorForm();
-//         fetchData();
-//       } else {
-//         alert(
-//           data.message ||
-//             (isEditing ? "Failed to update doctor" : "Failed to create doctor"),
-//         );
-//       }
-//     } catch (error) {
-//       alert(
-//         editingDoctorId ? "Error updating doctor" : "Error creating doctor",
-//       );
-//     }
-//   };
-
-//   const handleDeleteDoctor = async (docId: string) => {
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to delete this doctor? All associated user credentials will be removed.",
-//       )
-//     )
-//       return;
-//     try {
-//       const res = await fetch(`${apiUrl}/doctors/${docId}`, {
-//         method: "DELETE",
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Doctor deleted successfully");
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to delete doctor");
-//       }
-//     } catch (err) {
-//       alert("Error deleting doctor");
-//     }
-//   };
-
-//   // Appointment status toggle
-//   const handleUpdateAppointment = async (apptId: string, status: string) => {
-//     try {
-//       const res = await fetch(`${apiUrl}/appointments/${apptId}/status`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ status }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to update appointment");
-//       }
-//     } catch (err) {
-//       alert("Error updating status");
-//     }
-//   };
-
-//   // Billing Actions
-//   const handleAddBillItem = () => {
-//     if (!billForm.itemDesc || billForm.itemAmount <= 0) return;
-//     setBillForm({
-//       ...billForm,
-//       items: [
-//         ...billForm.items,
-//         { description: billForm.itemDesc, amount: Number(billForm.itemAmount) },
-//       ],
-//       itemDesc: "",
-//       itemAmount: 0,
-//     });
-//   };
-
-//   const handleCreateBill = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (billForm.items.length === 0) {
-//       alert("Please add at least one item to the invoice");
-//       return;
-//     }
-//     try {
-//       const res = await fetch(`${apiUrl}/bills`, {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//           patientId: billForm.patientId,
-//           appointmentId: billForm.appointmentId || undefined,
-//           items: billForm.items,
-//           dueDate: billForm.dueDate,
-//         }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Invoice generated successfully");
-//         setShowBillForm(false);
-//         setBillForm({
-//           patientId: "",
-//           appointmentId: "",
-//           itemDesc: "",
-//           itemAmount: 0,
-//           items: [],
-//           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-//             .toISOString()
-//             .split("T")[0],
-//         });
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to generate invoice");
-//       }
-//     } catch (err) {
-//       alert("Error generating bill");
-//     }
-//   };
-
-//   const handleToggleBillStatus = async (
-//     billId: string,
-//     currentStatus: string,
-//   ) => {
-//     const nextStatus = currentStatus === "paid" ? "unpaid" : "paid";
-//     try {
-//       const res = await fetch(`${apiUrl}/bills/${billId}/status`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ paymentStatus: nextStatus }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         fetchData();
-//       }
-//     } catch (err) {
-//       alert("Error updating payment status");
-//     }
-//   };
-
-//   if (loading && doctors.length === 0) {
-//     return (
-//       <div className="dashboard-loading">
-//         <RefreshCw className="animate-spin" size={32} color="#0284c7" />
-//         <p>Loading dashboard metrics...</p>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="dashboard-content fade-in">
-//       <div className="dashboard-title-row">
-//         <h1>Admin Control Room</h1>
-//         <button onClick={fetchData} className="btn btn-secondary btn-sm">
-//           <RefreshCw size={16} />
-//           <span>Refresh Data</span>
-//         </button>
-//       </div>
-
-//       {currentTab === "overview" && (
-//         <>
-//           {/* Summary Cards */}
-//           <div className="stats-grid">
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper blue">
-//                 <UserPlus size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.doctorsCount}</h3>
-//                 <p>Doctors On Duty</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper green">
-//                 <Users size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.patientsCount}</h3>
-//                 <p>Registered Patients</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper warning">
-//                 <Calendar size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.appointmentsCount}</h3>
-//                 <p>Appointments Booked</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper info">
-//                 <DollarSign size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>₹{stats.totalRevenue.toLocaleString()}</h3>
-//                 <p>Revenue Collected</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper danger">
-//                 <CreditCard size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.unpaidBills}</h3>
-//                 <p>Pending Invoices</p>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Quick Schedule Overview */}
-//           <div className="dashboard-layout-grid">
-//             <div className="card grid-span-2">
-//               <div className="card-header-row">
-//                 <h3>Recent Appointments</h3>
-//               </div>
-//               {appointments.length === 0 ? (
-//                 <p className="no-data-text">No appointments recorded yet.</p>
-//               ) : (
-//                 <div className="table-responsive">
-//                   <table className="table">
-//                     <thead>
-//                       <tr>
-//                         <th>Patient</th>
-//                         <th>Doctor</th>
-//                         <th>Date & Time</th>
-//                         <th>Status</th>
-//                       </tr>
-//                     </thead>
-//                     <tbody>
-//                       {appointments.slice(0, 5).map((appt) => (
-//                         <tr key={appt._id}>
-//                           <td>{appt.patient?.user?.name || "N/A"}</td>
-//                           <td>Dr. {appt.doctor?.user?.name || "N/A"}</td>
-//                           <td>
-//                             {new Date(appt.date).toLocaleDateString()} at{" "}
-//                             {appt.timeSlot}
-//                           </td>
-//                           <td>
-//                             <span
-//                               className={`badge badge-${
-//                                 appt.status === "confirmed"
-//                                   ? "success"
-//                                   : appt.status === "pending"
-//                                     ? "warning"
-//                                     : appt.status === "completed"
-//                                       ? "info"
-//                                       : "danger"
-//                               }`}
-//                             >
-//                               {appt.status}
-//                             </span>
-//                           </td>
-//                         </tr>
-//                       ))}
-//                     </tbody>
-//                   </table>
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-//         </>
-//       )}
-
-//       {currentTab === "doctors" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Medical Officers Directory</h3>
-//             <button
-//               onClick={() =>
-//                 showDoctorForm ? resetDoctorForm() : handleOpenAddDoctor()
-//               }
-//               className="btn btn-primary btn-sm"
-//             >
-//               <Plus size={16} />
-//               <span>Add Doctor Account</span>
-//             </button>
-//           </div>
-
-//           {showDoctorForm && (
-//             <form
-//               onSubmit={handleSubmitDoctor}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>
-//                 {editingDoctorId
-//                   ? "Edit Doctor Profile"
-//                   : "Register New Doctor"}
-//               </h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Full Name</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.name}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, name: e.target.value })
-//                     }
-//                     placeholder="e.g. John Watson"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Email Address</label>
-//                   <input
-//                     type="email"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.email}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, email: e.target.value })
-//                     }
-//                     placeholder="drjohn@hospital.com"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">
-//                     Password{" "}
-//                     {editingDoctorId && (
-//                       <span
-//                         style={{ fontWeight: 400, color: "var(--text-muted)" }}
-//                       >
-//                         (leave blank to keep current)
-//                       </span>
-//                     )}
-//                   </label>
-//                   <input
-//                     type="password"
-//                     className="form-control"
-//                     required={!editingDoctorId}
-//                     value={doctorForm.password}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, password: e.target.value })
-//                     }
-//                     placeholder="••••••"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Phone Number</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.phoneNumber}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         phoneNumber: e.target.value,
-//                       })
-//                     }
-//                     placeholder="9998887776"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Specialization</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.specialization}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         specialization: e.target.value,
-//                       })
-//                     }
-//                     placeholder="e.g. Cardiology specialist"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Department</label>
-//                   <select
-//                     className="form-control"
-//                     value={doctorForm.department}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         department: e.target.value,
-//                       })
-//                     }
-//                   >
-//                     <option value="Cardiology">Cardiology</option>
-//                     <option value="Neurology">Neurology</option>
-//                     <option value="Pediatrics">Pediatrics</option>
-//                     <option value="General Medicine">General Medicine</option>
-//                     <option value="Orthopedics">Orthopedics</option>
-//                     <option value="Critical Care">Critical care</option>
-//                     <option value="Dermatology">Dermatology</option>
-//                   </select>
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Qualifications</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.qualification}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         qualification: e.target.value,
-//                       })
-//                     }
-//                     placeholder="e.g. MBBS, MD"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Years of Experience</label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.experience}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         experience: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Consultation Fee (₹)</label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.consultationFee}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         consultationFee: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Availability Day</label>
-//                   <select
-//                     className="form-control"
-//                     value={doctorForm.availabilityDay}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         availabilityDay: e.target.value,
-//                       })
-//                     }
-//                   >
-//                     <option value="Monday">Monday</option>
-//                     <option value="Tuesday">Tuesday</option>
-//                     <option value="Wednesday">Wednesday</option>
-//                     <option value="Thursday">Thursday</option>
-//                     <option value="Friday">Friday</option>
-//                     <option value="Saturday">Saturday</option>
-//                     <option value="Sunday">Sunday</option>
-//                   </select>
-//                 </div>
-//                 <div className="form-group grid-span-2-col">
-//                   <label className="form-label">Slots (comma separated)</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.availabilitySlots}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         availabilitySlots: e.target.value,
-//                       })
-//                     }
-//                     placeholder="09:00 - 11:00, 15:00 - 17:00"
-//                   />
-//                 </div>
-//               </div>
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   {editingDoctorId ? "Save Changes" : "Create Doctor Profile"}
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={resetDoctorForm}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {doctors.length === 0 ? (
-//             <p className="no-data-text">No doctors registered yet.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Doctor Name</th>
-//                     <th>Department</th>
-//                     <th>Speciality</th>
-//                     <th>Qualifications</th>
-//                     <th>Experience</th>
-//                     <th>Fee (₹)</th>
-//                     <th>Availability</th>
-//                     <th>Actions</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {doctors.map((doc) => (
-//                     <tr key={doc._id}>
-//                       <td className="strong-text">
-//                         Dr. {doc.user?.name || "N/A"}
-//                       </td>
-//                       <td>{doc.department}</td>
-//                       <td>{doc.specialization}</td>
-//                       <td>{doc.qualification}</td>
-//                       <td>{doc.experience} Years</td>
-//                       <td>₹{doc.consultationFee}</td>
-//                       <td>
-//                         {doc.availability?.map((av: any, idx: number) => (
-//                           <div key={idx} className="availability-slot-badge">
-//                             <strong>{av.day}</strong>: {av.slots.join(", ")}
-//                           </div>
-//                         ))}
-//                       </td>
-//                       <td>
-//                         <div className="table-action-buttons">
-//                           <button
-//                             onClick={() => handleOpenEditDoctor(doc)}
-//                             className="btn btn-secondary btn-sm"
-//                             title="Edit Profile"
-//                           >
-//                             <Edit2 size={14} />
-//                           </button>
-//                           <button
-//                             onClick={() => handleDeleteDoctor(doc._id)}
-//                             className="btn btn-danger btn-sm"
-//                             title="Delete Profile"
-//                           >
-//                             <Trash2 size={14} />
-//                           </button>
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "patients" && (
-//         <div className="tab-pane-container">
-//           <h3>Registered Patients</h3>
-//           {patients.length === 0 ? (
-//             <p className="no-data-text">
-//               No patients registered in the database.
-//             </p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Patient Name</th>
-//                     <th>Phone Number</th>
-//                     <th>Address</th>
-//                     <th>Joined Date</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {patients.map((pat) => (
-//                     <tr key={pat._id}>
-//                       <td className="strong-text">{pat.user?.name || "N/A"}</td>
-//                       <td>{pat.user?.phoneNumber || "N/A"}</td>
-//                       <td>{pat.address}</td>
-//                       <td>{new Date(pat.createdAt).toLocaleDateString()}</td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "appointments" && (
-//         <div className="tab-pane-container">
-//           <h3>Patient Appointment Schedule</h3>
-//           {appointments.length === 0 ? (
-//             <p className="no-data-text">No appointments booked.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Patient</th>
-//                     <th>Doctor</th>
-//                     <th>Reason</th>
-//                     <th>Date & Slot</th>
-//                     <th>Status</th>
-//                     <th>Manage</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {appointments.map((appt) => (
-//                     <tr key={appt._id}>
-//                       <td className="strong-text">
-//                         {appt.patient?.user?.name || "N/A"}
-//                       </td>
-//                       <td>
-//                         Dr. {appt.doctor?.user?.name || "N/A"} (
-//                         {appt.doctor?.department})
-//                       </td>
-//                       <td>{appt.reason}</td>
-//                       <td>
-//                         {new Date(appt.date).toLocaleDateString()} -{" "}
-//                         {appt.timeSlot}
-//                       </td>
-//                       <td>
-//                         <span
-//                           className={`badge badge-${
-//                             appt.status === "confirmed"
-//                               ? "success"
-//                               : appt.status === "pending"
-//                                 ? "warning"
-//                                 : appt.status === "completed"
-//                                   ? "info"
-//                                   : "danger"
-//                           }`}
-//                         >
-//                           {appt.status}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         <div className="table-action-buttons">
-//                           {appt.status === "pending" && (
-//                             <button
-//                               onClick={() =>
-//                                 handleUpdateAppointment(appt._id, "confirmed")
-//                               }
-//                               className="btn btn-secondary btn-sm text-success"
-//                               title="Confirm Appointment"
-//                             >
-//                               <Check size={14} />
-//                             </button>
-//                           )}
-//                           {appt.status !== "cancelled" &&
-//                             appt.status !== "completed" && (
-//                               <button
-//                                 onClick={() =>
-//                                   handleUpdateAppointment(appt._id, "cancelled")
-//                                 }
-//                                 className="btn btn-secondary btn-sm text-danger"
-//                                 title="Cancel Appointment"
-//                               >
-//                                 <X size={14} />
-//                               </button>
-//                             )}
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "bills" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Hospital Billings & Invoices</h3>
-//             <button
-//               onClick={() => setShowBillForm(!showBillForm)}
-//               className="btn btn-primary btn-sm"
-//             >
-//               <FilePlus size={16} />
-//               <span>Generate New Invoice</span>
-//             </button>
-//           </div>
-
-//           {showBillForm && (
-//             <form
-//               onSubmit={handleCreateBill}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>Generate Invoice</h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Select Patient</label>
-//                   <select
-//                     className="form-control"
-//                     required
-//                     value={billForm.patientId}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, patientId: e.target.value })
-//                     }
-//                   >
-//                     <option value="">-- Select Patient --</option>
-//                     {patients.map((p) => (
-//                       <option key={p._id} value={p._id}>
-//                         {p.user?.name} ({p.user?.phoneNumber})
-//                       </option>
-//                     ))}
-//                   </select>
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Due Date</label>
-//                   <input
-//                     type="date"
-//                     className="form-control"
-//                     required
-//                     value={billForm.dueDate}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, dueDate: e.target.value })
-//                     }
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* Add line item */}
-//               <div className="billing-line-item-creator">
-//                 <h5>Invoice Items</h5>
-//                 <div className="line-item-fields">
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     placeholder="Item description (e.g. Lab Test, Consultation)"
-//                     value={billForm.itemDesc}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, itemDesc: e.target.value })
-//                     }
-//                   />
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     placeholder="Amount (₹)"
-//                     value={billForm.itemAmount || ""}
-//                     onChange={(e) =>
-//                       setBillForm({
-//                         ...billForm,
-//                         itemAmount: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                   <button
-//                     type="button"
-//                     onClick={handleAddBillItem}
-//                     className="btn btn-secondary"
-//                   >
-//                     Add Item
-//                   </button>
-//                 </div>
-
-//                 {billForm.items.length > 0 && (
-//                   <div className="billing-items-list">
-//                     <h6>Added Items:</h6>
-//                     <ul>
-//                       {billForm.items.map((item, idx) => (
-//                         <li key={idx}>
-//                           <span>{item.description}</span>
-//                           <strong>₹{item.amount}</strong>
-//                         </li>
-//                       ))}
-//                     </ul>
-//                     <div className="bill-total-calc">
-//                       Total:{" "}
-//                       <strong>
-//                         ₹{billForm.items.reduce((s, i) => s + i.amount, 0)}
-//                       </strong>
-//                     </div>
-//                   </div>
-//                 )}
-//               </div>
-
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   Save and Issue Invoice
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={() => setShowBillForm(false)}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {bills.length === 0 ? (
-//             <p className="no-data-text">No invoices issued.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Invoice ID</th>
-//                     <th>Patient Name</th>
-//                     <th>Invoice Items</th>
-//                     <th>Total Amount (₹)</th>
-//                     <th>Due Date</th>
-//                     <th>Payment Status</th>
-//                     <th>Toggle Status</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {bills.map((bill) => (
-//                     <tr key={bill._id}>
-//                       <td>#{bill._id.substring(bill._id.length - 8)}</td>
-//                       <td className="strong-text">
-//                         {bill.patient?.user?.name || "N/A"}
-//                       </td>
-//                       <td>
-//                         {bill.items?.map((item: any, idx: number) => (
-//                           <div key={idx} className="bill-list-subitem">
-//                             • {item.description}: ₹{item.amount}
-//                           </div>
-//                         ))}
-//                       </td>
-//                       <td className="strong-text">₹{bill.totalAmount}</td>
-//                       <td>{new Date(bill.dueDate).toLocaleDateString()}</td>
-//                       <td>
-//                         <span
-//                           className={`badge badge-${bill.paymentStatus === "paid" ? "success" : "danger"}`}
-//                         >
-//                           {bill.paymentStatus}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         <button
-//                           onClick={() =>
-//                             handleToggleBillStatus(bill._id, bill.paymentStatus)
-//                           }
-//                           className={`btn btn-sm ${bill.paymentStatus === "paid" ? "btn-secondary" : "btn-primary"}`}
-//                         >
-//                           Mark as{" "}
-//                           {bill.paymentStatus === "paid" ? "Unpaid" : "Paid"}
-//                         </button>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default AdminDashboard;
-
-// import React, { useState, useEffect } from "react";
-// import { useAuth } from "../context/AuthContext";
-// import {
-//   Users,
-//   UserPlus,
-//   Calendar,
-//   DollarSign,
-//   CreditCard,
-//   FilePlus,
-//   Plus,
-//   Trash2,
-//   Edit2,
-//   Check,
-//   X,
-//   RefreshCw,
-// } from "lucide-react";
-
-// interface AdminDashboardProps {
-//   currentTab: string;
-// }
-
-// const emptyDoctorForm = {
-//   name: "",
-//   email: "",
-//   password: "",
-//   phoneNumber: "",
-//   specialization: "",
-//   department: "General Medicine",
-//   qualification: "",
-//   experience: 5,
-//   consultationFee: 500,
-//   availabilityDay: "Mon",
-//   availabilitySlots: "09:00 - 13:00, 14:00 - 17:00",
-// };
-
-// const emptyPatientForm = {
-//   name: "",
-//   phoneNumber: "",
-//   address: "",
-// };
-
-// export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-//   currentTab,
-// }) => {
-//   const { token, apiUrl } = useAuth();
-
-//   // States
-//   const [stats, setStats] = useState({
-//     doctorsCount: 0,
-//     patientsCount: 0,
-//     appointmentsCount: 0,
-//     totalRevenue: 0,
-//     unpaidBills: 0,
-//   });
-
-//   const [doctors, setDoctors] = useState<any[]>([]);
-//   const [patients, setPatients] = useState<any[]>([]);
-//   const [appointments, setAppointments] = useState<any[]>([]);
-//   const [bills, setBills] = useState<any[]>([]);
-//   const [loading, setLoading] = useState(true);
-
-//   // Forms States
-//   const [showDoctorForm, setShowDoctorForm] = useState(false);
-//   const [editingDoctorId, setEditingDoctorId] = useState<string | null>(null);
-//   const [doctorForm, setDoctorForm] = useState(emptyDoctorForm);
-
-//   const [showPatientForm, setShowPatientForm] = useState(false);
-//   const [editingPatientId, setEditingPatientId] = useState<string | null>(null);
-//   const [patientForm, setPatientForm] = useState(emptyPatientForm);
-
-//   const [showBillForm, setShowBillForm] = useState(false);
-//   const [billForm, setBillForm] = useState({
-//     patientId: "",
-//     appointmentId: "",
-//     itemDesc: "",
-//     itemAmount: 0,
-//     items: [] as { description: string; amount: number }[],
-//     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-//       .toISOString()
-//       .split("T")[0],
-//   });
-
-//   const fetchData = async () => {
-//     setLoading(true);
-//     try {
-//       const headers = { Authorization: `Bearer ${token}` };
-
-//       // Fetch Doctors
-//       const resDocs = await fetch(`${apiUrl}/doctors`, { headers });
-//       const dataDocs = await resDocs.json();
-//       const docsList = dataDocs.success ? dataDocs.data : [];
-//       setDoctors(docsList);
-
-//       // Fetch Patients
-//       const resPatients = await fetch(`${apiUrl}/patients`, { headers });
-//       const dataPatients = await resPatients.json();
-//       const patientsList = dataPatients.success ? dataPatients.data : [];
-//       setPatients(patientsList);
-
-//       // Fetch Appointments
-//       const resAppointments = await fetch(`${apiUrl}/appointments`, {
-//         headers,
-//       });
-//       const dataAppointments = await resAppointments.json();
-//       const apptsList = dataAppointments.success ? dataAppointments.data : [];
-//       setAppointments(apptsList);
-
-//       // Fetch Bills
-//       const resBills = await fetch(`${apiUrl}/bills`, { headers });
-//       const dataBills = await resBills.json();
-//       const billsList = dataBills.success ? dataBills.data : [];
-//       setBills(billsList);
-
-//       // Calculate Stats
-//       const revenue = billsList
-//         .filter((b: any) => b.paymentStatus === "paid")
-//         .reduce((sum: number, b: any) => sum + b.totalAmount, 0);
-
-//       const unpaidCount = billsList.filter(
-//         (b: any) => b.paymentStatus === "unpaid",
-//       ).length;
-
-//       setStats({
-//         doctorsCount: docsList.length,
-//         patientsCount: patientsList.length,
-//         appointmentsCount: apptsList.length,
-//         totalRevenue: revenue,
-//         unpaidBills: unpaidCount,
-//       });
-//     } catch (err) {
-//       console.error("Error loading admin dashboard data:", err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (token) {
-//       fetchData();
-//     }
-//   }, [token, currentTab]);
-
-//   // Doctor CRUD
-//   const resetDoctorForm = () => {
-//     setDoctorForm(emptyDoctorForm);
-//     setEditingDoctorId(null);
-//     setShowDoctorForm(false);
-//   };
-
-//   const handleOpenAddDoctor = () => {
-//     setDoctorForm(emptyDoctorForm);
-//     setEditingDoctorId(null);
-//     setShowDoctorForm(true);
-//   };
-
-//   const handleOpenEditDoctor = (doc: any) => {
-//     const firstAvailability = doc.availability?.[0];
-//     setDoctorForm({
-//       name: doc.user?.name || "",
-//       email: doc.user?.email || "",
-//       password: "", // left blank; only sent if the admin types a new one
-//       phoneNumber: doc.user?.phoneNumber || "",
-//       specialization: doc.specialization || "",
-//       department: doc.department || "General Medicine",
-//       qualification: doc.qualification || "",
-//       experience: doc.experience ?? 5,
-//       consultationFee: doc.consultationFee ?? 500,
-//       availabilityDay: firstAvailability?.day || "Mon",
-//       availabilitySlots: firstAvailability?.slots?.join(", ") || "",
-//     });
-//     setEditingDoctorId(doc._id);
-//     setShowDoctorForm(true);
-//   };
-
-//   const handleSubmitDoctor = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     try {
-//       const slotsArray = doctorForm.availabilitySlots
-//         .split(",")
-//         .map((s) => s.trim())
-//         .filter(Boolean);
-
-//       const isEditing = Boolean(editingDoctorId);
-
-//       const payload: any = {
-//         name: doctorForm.name,
-//         email: doctorForm.email,
-//         phoneNumber: doctorForm.phoneNumber,
-//         specialization: doctorForm.specialization,
-//         department: doctorForm.department,
-//         qualification: doctorForm.qualification,
-//         experience: Number(doctorForm.experience),
-//         consultationFee: Number(doctorForm.consultationFee),
-//         availability: [
-//           {
-//             day: doctorForm.availabilityDay,
-//             slots: slotsArray,
-//           },
-//         ],
-//       };
-
-//       // Only send password if creating, or if the admin explicitly typed one while editing
-//       if (!isEditing || doctorForm.password) {
-//         payload.password = doctorForm.password;
-//       }
-
-//       const res = await fetch(
-//         isEditing
-//           ? `${apiUrl}/doctors/${editingDoctorId}`
-//           : `${apiUrl}/doctors`,
-//         {
-//           method: isEditing ? "PUT" : "POST",
-//           headers: {
-//             "Content-Type": "application/json",
-//             Authorization: `Bearer ${token}`,
-//           },
-//           body: JSON.stringify(payload),
-//         },
-//       );
-//       const data = await res.json();
-//       if (data.success) {
-//         alert(
-//           isEditing
-//             ? "Doctor profile updated successfully"
-//             : "Doctor account created successfully",
-//         );
-//         resetDoctorForm();
-//         fetchData();
-//       } else {
-//         alert(
-//           data.message ||
-//             (isEditing ? "Failed to update doctor" : "Failed to create doctor"),
-//         );
-//       }
-//     } catch (error) {
-//       alert(
-//         editingDoctorId ? "Error updating doctor" : "Error creating doctor",
-//       );
-//     }
-//   };
-
-//   const handleDeleteDoctor = async (docId: string) => {
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to delete this doctor? All associated user credentials will be removed.",
-//       )
-//     )
-//       return;
-//     try {
-//       const res = await fetch(`${apiUrl}/doctors/${docId}`, {
-//         method: "DELETE",
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Doctor deleted successfully");
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to delete doctor");
-//       }
-//     } catch (err) {
-//       alert("Error deleting doctor");
-//     }
-//   };
-
-//   // Patient CRUD
-//   const resetPatientForm = () => {
-//     setPatientForm(emptyPatientForm);
-//     setEditingPatientId(null);
-//     setShowPatientForm(false);
-//   };
-
-//   const handleOpenEditPatient = (pat: any) => {
-//     setPatientForm({
-//       name: pat.user?.name || "",
-//       phoneNumber: pat.user?.phoneNumber || "",
-//       address: pat.address || "",
-//     });
-//     setEditingPatientId(pat._id);
-//     setShowPatientForm(true);
-//   };
-
-//   const handleSubmitPatient = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (!editingPatientId) return; // this form is edit-only; creation happens via Register
-
-//     try {
-//       const res = await fetch(`${apiUrl}/patients/${editingPatientId}`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//           name: patientForm.name,
-//           phoneNumber: patientForm.phoneNumber,
-//           address: patientForm.address,
-//         }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Patient details updated successfully");
-//         resetPatientForm();
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to update patient");
-//       }
-//     } catch (error) {
-//       alert("Error updating patient");
-//     }
-//   };
-
-//   const handleDeletePatient = async (patId: string) => {
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to delete this patient? Their account and records will be removed.",
-//       )
-//     )
-//       return;
-//     try {
-//       const res = await fetch(`${apiUrl}/patients/${patId}`, {
-//         method: "DELETE",
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Patient deleted successfully");
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to delete patient");
-//       }
-//     } catch (err) {
-//       alert("Error deleting patient");
-//     }
-//   };
-
-//   // Appointment status toggle
-//   const handleUpdateAppointment = async (apptId: string, status: string) => {
-//     try {
-//       const res = await fetch(`${apiUrl}/appointments/${apptId}/status`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ status }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to update appointment");
-//       }
-//     } catch (err) {
-//       alert("Error updating status");
-//     }
-//   };
-
-//   // Billing Actions
-//   const handleAddBillItem = () => {
-//     if (!billForm.itemDesc || billForm.itemAmount <= 0) return;
-//     setBillForm({
-//       ...billForm,
-//       items: [
-//         ...billForm.items,
-//         { description: billForm.itemDesc, amount: Number(billForm.itemAmount) },
-//       ],
-//       itemDesc: "",
-//       itemAmount: 0,
-//     });
-//   };
-
-//   const handleCreateBill = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (billForm.items.length === 0) {
-//       alert("Please add at least one item to the invoice");
-//       return;
-//     }
-//     try {
-//       const res = await fetch(`${apiUrl}/bills`, {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//           patientId: billForm.patientId,
-//           appointmentId: billForm.appointmentId || undefined,
-//           items: billForm.items,
-//           dueDate: billForm.dueDate,
-//         }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Invoice generated successfully");
-//         setShowBillForm(false);
-//         setBillForm({
-//           patientId: "",
-//           appointmentId: "",
-//           itemDesc: "",
-//           itemAmount: 0,
-//           items: [],
-//           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-//             .toISOString()
-//             .split("T")[0],
-//         });
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to generate invoice");
-//       }
-//     } catch (err) {
-//       alert("Error generating bill");
-//     }
-//   };
-
-//   const handleToggleBillStatus = async (
-//     billId: string,
-//     currentStatus: string,
-//   ) => {
-//     const nextStatus = currentStatus === "paid" ? "unpaid" : "paid";
-//     try {
-//       const res = await fetch(`${apiUrl}/bills/${billId}/status`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ paymentStatus: nextStatus }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         fetchData();
-//       }
-//     } catch (err) {
-//       alert("Error updating payment status");
-//     }
-//   };
-
-//   if (loading && doctors.length === 0) {
-//     return (
-//       <div className="dashboard-loading">
-//         <RefreshCw className="animate-spin" size={32} color="#0284c7" />
-//         <p>Loading dashboard metrics...</p>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="dashboard-content fade-in">
-//       <div className="dashboard-title-row">
-//         <h1>Admin Control Room</h1>
-//         <button onClick={fetchData} className="btn btn-secondary btn-sm">
-//           <RefreshCw size={16} />
-//           <span>Refresh Data</span>
-//         </button>
-//       </div>
-
-//       {currentTab === "overview" && (
-//         <>
-//           {/* Summary Cards */}
-//           <div className="stats-grid">
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper blue">
-//                 <UserPlus size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.doctorsCount}</h3>
-//                 <p>Doctors On Duty</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper green">
-//                 <Users size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.patientsCount}</h3>
-//                 <p>Registered Patients</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper warning">
-//                 <Calendar size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.appointmentsCount}</h3>
-//                 <p>Appointments Booked</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper info">
-//                 <DollarSign size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>₹{stats.totalRevenue.toLocaleString()}</h3>
-//                 <p>Revenue Collected</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper danger">
-//                 <CreditCard size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.unpaidBills}</h3>
-//                 <p>Pending Invoices</p>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Quick Schedule Overview */}
-//           <div className="dashboard-layout-grid">
-//             <div className="card grid-span-2">
-//               <div className="card-header-row">
-//                 <h3>Recent Appointments</h3>
-//               </div>
-//               {appointments.length === 0 ? (
-//                 <p className="no-data-text">No appointments recorded yet.</p>
-//               ) : (
-//                 <div className="table-responsive">
-//                   <table className="table">
-//                     <thead>
-//                       <tr>
-//                         <th>Patient</th>
-//                         <th>Doctor</th>
-//                         <th>Date & Time</th>
-//                         <th>Status</th>
-//                       </tr>
-//                     </thead>
-//                     <tbody>
-//                       {appointments.slice(0, 5).map((appt) => (
-//                         <tr key={appt._id}>
-//                           <td>{appt.patient?.user?.name || "N/A"}</td>
-//                           <td>Dr. {appt.doctor?.user?.name || "N/A"}</td>
-//                           <td>
-//                             {new Date(appt.date).toLocaleDateString()} at{" "}
-//                             {appt.timeSlot}
-//                           </td>
-//                           <td>
-//                             <span
-//                               className={`badge badge-${
-//                                 appt.status === "confirmed"
-//                                   ? "success"
-//                                   : appt.status === "pending"
-//                                     ? "warning"
-//                                     : appt.status === "completed"
-//                                       ? "info"
-//                                       : "danger"
-//                               }`}
-//                             >
-//                               {appt.status}
-//                             </span>
-//                           </td>
-//                         </tr>
-//                       ))}
-//                     </tbody>
-//                   </table>
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-//         </>
-//       )}
-
-//       {currentTab === "doctors" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Medical Officers Directory</h3>
-//             <button
-//               onClick={() =>
-//                 showDoctorForm ? resetDoctorForm() : handleOpenAddDoctor()
-//               }
-//               className="btn btn-primary btn-sm"
-//             >
-//               <Plus size={16} />
-//               <span>Add Doctor Account</span>
-//             </button>
-//           </div>
-
-//           {showDoctorForm && (
-//             <form
-//               onSubmit={handleSubmitDoctor}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>
-//                 {editingDoctorId
-//                   ? "Edit Doctor Profile"
-//                   : "Register New Doctor"}
-//               </h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Full Name</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.name}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, name: e.target.value })
-//                     }
-//                     placeholder="e.g. John Watson"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Email Address</label>
-//                   <input
-//                     type="email"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.email}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, email: e.target.value })
-//                     }
-//                     placeholder="drjohn@hospital.com"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">
-//                     Password{" "}
-//                     {editingDoctorId && (
-//                       <span
-//                         style={{ fontWeight: 400, color: "var(--text-muted)" }}
-//                       >
-//                         (leave blank to keep current)
-//                       </span>
-//                     )}
-//                   </label>
-//                   <input
-//                     type="password"
-//                     className="form-control"
-//                     required={!editingDoctorId}
-//                     value={doctorForm.password}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, password: e.target.value })
-//                     }
-//                     placeholder="••••••"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Phone Number</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.phoneNumber}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         phoneNumber: e.target.value,
-//                       })
-//                     }
-//                     placeholder="9998887776"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Specialization</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.specialization}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         specialization: e.target.value,
-//                       })
-//                     }
-//                     placeholder="e.g. Cardiology specialist"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Department</label>
-//                   <select
-//                     className="form-control"
-//                     value={doctorForm.department}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         department: e.target.value,
-//                       })
-//                     }
-//                   >
-//                     <option value="Cardiology">Cardiology</option>
-//                     <option value="Neurology">Neurology</option>
-//                     <option value="Pediatrics">Pediatrics</option>
-//                     <option value="General Medicine">General Medicine</option>
-//                     <option value="Orthopedics">Orthopedics</option>
-//                     <option value="Critical Care">Critical care</option>
-//                     <option value="Dermatology">Dermatology</option>
-//                   </select>
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Qualifications</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.qualification}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         qualification: e.target.value,
-//                       })
-//                     }
-//                     placeholder="e.g. MBBS, MD"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Years of Experience</label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.experience}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         experience: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Consultation Fee (₹)</label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.consultationFee}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         consultationFee: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Availability Day</label>
-//                   <select
-//                     className="form-control"
-//                     value={doctorForm.availabilityDay}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         availabilityDay: e.target.value,
-//                       })
-//                     }
-//                   >
-//                     <option value="Mon">Mon</option>
-//                     <option value="Tue">Tue</option>
-//                     <option value="Wed">Wed</option>
-//                     <option value="Thu">Thu</option>
-//                     <option value="Fri">Fri</option>
-//                     <option value="Sat">Sat</option>
-//                     <option value="Sun">Sun</option>
-//                   </select>
-//                 </div>
-//                 <div className="form-group grid-span-2-col">
-//                   <label className="form-label">Slots (comma separated)</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.availabilitySlots}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         availabilitySlots: e.target.value,
-//                       })
-//                     }
-//                     placeholder="09:00 - 11:00, 15:00 - 17:00"
-//                   />
-//                 </div>
-//               </div>
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   {editingDoctorId ? "Save Changes" : "Create Doctor Profile"}
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={resetDoctorForm}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {doctors.length === 0 ? (
-//             <p className="no-data-text">No doctors registered yet.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Doctor Name</th>
-//                     <th>Department</th>
-//                     <th>Speciality</th>
-//                     <th>Qualifications</th>
-//                     <th>Experience</th>
-//                     <th>Fee (₹)</th>
-//                     <th>Availability</th>
-//                     <th>Actions</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {doctors.map((doc) => (
-//                     <tr key={doc._id}>
-//                       <td className="strong-text">
-//                         Dr. {doc.user?.name || "N/A"}
-//                       </td>
-//                       <td>{doc.department}</td>
-//                       <td>{doc.specialization}</td>
-//                       <td>{doc.qualification}</td>
-//                       <td>{doc.experience} Years</td>
-//                       <td>₹{doc.consultationFee}</td>
-//                       <td>
-//                         {doc.availability?.map((av: any, idx: number) => (
-//                           <div key={idx} className="availability-slot-badge">
-//                             <strong>{av.day}</strong>: {av.slots.join(", ")}
-//                           </div>
-//                         ))}
-//                       </td>
-//                       <td>
-//                         <div className="table-action-buttons">
-//                           <button
-//                             onClick={() => handleOpenEditDoctor(doc)}
-//                             className="btn btn-secondary btn-sm"
-//                             title="Edit Profile"
-//                           >
-//                             <Edit2 size={14} />
-//                           </button>
-//                           <button
-//                             onClick={() => handleDeleteDoctor(doc._id)}
-//                             className="btn btn-danger btn-sm"
-//                             title="Delete Profile"
-//                           >
-//                             <Trash2 size={14} />
-//                           </button>
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "patients" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Registered Patients</h3>
-//           </div>
-
-//           {showPatientForm && (
-//             <form
-//               onSubmit={handleSubmitPatient}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>Edit Patient Details</h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Full Name</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={patientForm.name}
-//                     onChange={(e) =>
-//                       setPatientForm({ ...patientForm, name: e.target.value })
-//                     }
-//                     placeholder="e.g. Jane Doe"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Phone Number</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={patientForm.phoneNumber}
-//                     onChange={(e) =>
-//                       setPatientForm({
-//                         ...patientForm,
-//                         phoneNumber: e.target.value,
-//                       })
-//                     }
-//                     placeholder="9876543210"
-//                   />
-//                 </div>
-//                 <div className="form-group grid-span-2-col">
-//                   <label className="form-label">Place</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={patientForm.address}
-//                     onChange={(e) =>
-//                       setPatientForm({
-//                         ...patientForm,
-//                         address: e.target.value,
-//                       })
-//                     }
-//                     placeholder="Street address, City, ZIP Code"
-//                   />
-//                 </div>
-//               </div>
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   Save Changes
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={resetPatientForm}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {patients.length === 0 ? (
-//             <p className="no-data-text">
-//               No patients registered in the database.
-//             </p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Patient Name</th>
-//                     <th>Phone Number</th>
-//                     <th>Address</th>
-//                     <th>Joined Date</th>
-//                     <th>Actions</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {patients.map((pat) => (
-//                     <tr key={pat._id}>
-//                       <td className="strong-text">{pat.user?.name || "N/A"}</td>
-//                       <td>{pat.user?.phoneNumber || "N/A"}</td>
-//                       <td>{pat.address}</td>
-//                       <td>{new Date(pat.createdAt).toLocaleDateString()}</td>
-//                       <td>
-//                         <div className="table-action-buttons">
-//                           <button
-//                             onClick={() => handleOpenEditPatient(pat)}
-//                             className="btn btn-secondary btn-sm"
-//                             title="Edit Patient"
-//                           >
-//                             <Edit2 size={14} />
-//                           </button>
-//                           <button
-//                             onClick={() => handleDeletePatient(pat._id)}
-//                             className="btn btn-danger btn-sm"
-//                             title="Delete Patient"
-//                           >
-//                             <Trash2 size={14} />
-//                           </button>
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "appointments" && (
-//         <div className="tab-pane-container">
-//           <h3>Patient Appointment Schedule</h3>
-//           {appointments.length === 0 ? (
-//             <p className="no-data-text">No appointments booked.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Patient</th>
-//                     <th>Doctor</th>
-//                     <th>Reason</th>
-//                     <th>Date & Slot</th>
-//                     <th>Status</th>
-//                     <th>Manage</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {appointments.map((appt) => (
-//                     <tr key={appt._id}>
-//                       <td className="strong-text">
-//                         {appt.patient?.user?.name || "N/A"}
-//                       </td>
-//                       <td>
-//                         Dr. {appt.doctor?.user?.name || "N/A"} (
-//                         {appt.doctor?.department})
-//                       </td>
-//                       <td>{appt.reason}</td>
-//                       <td>
-//                         {new Date(appt.date).toLocaleDateString()} -{" "}
-//                         {appt.timeSlot}
-//                       </td>
-//                       <td>
-//                         <span
-//                           className={`badge badge-${
-//                             appt.status === "confirmed"
-//                               ? "success"
-//                               : appt.status === "pending"
-//                                 ? "warning"
-//                                 : appt.status === "completed"
-//                                   ? "info"
-//                                   : "danger"
-//                           }`}
-//                         >
-//                           {appt.status}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         <div className="table-action-buttons">
-//                           {appt.status === "pending" && (
-//                             <button
-//                               onClick={() =>
-//                                 handleUpdateAppointment(appt._id, "confirmed")
-//                               }
-//                               className="btn btn-secondary btn-sm text-success"
-//                               title="Confirm Appointment"
-//                             >
-//                               <Check size={14} />
-//                             </button>
-//                           )}
-//                           {appt.status !== "cancelled" &&
-//                             appt.status !== "completed" && (
-//                               <button
-//                                 onClick={() =>
-//                                   handleUpdateAppointment(appt._id, "cancelled")
-//                                 }
-//                                 className="btn btn-secondary btn-sm text-danger"
-//                                 title="Cancel Appointment"
-//                               >
-//                                 <X size={14} />
-//                               </button>
-//                             )}
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "bills" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Hospital Billings & Invoices</h3>
-//             <button
-//               onClick={() => setShowBillForm(!showBillForm)}
-//               className="btn btn-primary btn-sm"
-//             >
-//               <FilePlus size={16} />
-//               <span>Generate New Invoice</span>
-//             </button>
-//           </div>
-
-//           {showBillForm && (
-//             <form
-//               onSubmit={handleCreateBill}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>Generate Invoice</h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Select Patient</label>
-//                   <select
-//                     className="form-control"
-//                     required
-//                     value={billForm.patientId}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, patientId: e.target.value })
-//                     }
-//                   >
-//                     <option value="">-- Select Patient --</option>
-//                     {patients.map((p) => (
-//                       <option key={p._id} value={p._id}>
-//                         {p.user?.name} ({p.user?.phoneNumber})
-//                       </option>
-//                     ))}
-//                   </select>
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Due Date</label>
-//                   <input
-//                     type="date"
-//                     className="form-control"
-//                     required
-//                     value={billForm.dueDate}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, dueDate: e.target.value })
-//                     }
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* Add line item */}
-//               <div className="billing-line-item-creator">
-//                 <h5>Invoice Items</h5>
-//                 <div className="line-item-fields">
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     placeholder="Item description (e.g. Lab Test, Consultation)"
-//                     value={billForm.itemDesc}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, itemDesc: e.target.value })
-//                     }
-//                   />
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     placeholder="Amount (₹)"
-//                     value={billForm.itemAmount || ""}
-//                     onChange={(e) =>
-//                       setBillForm({
-//                         ...billForm,
-//                         itemAmount: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                   <button
-//                     type="button"
-//                     onClick={handleAddBillItem}
-//                     className="btn btn-secondary"
-//                   >
-//                     Add Item
-//                   </button>
-//                 </div>
-
-//                 {billForm.items.length > 0 && (
-//                   <div className="billing-items-list">
-//                     <h6>Added Items:</h6>
-//                     <ul>
-//                       {billForm.items.map((item, idx) => (
-//                         <li key={idx}>
-//                           <span>{item.description}</span>
-//                           <strong>₹{item.amount}</strong>
-//                         </li>
-//                       ))}
-//                     </ul>
-//                     <div className="bill-total-calc">
-//                       Total:{" "}
-//                       <strong>
-//                         ₹{billForm.items.reduce((s, i) => s + i.amount, 0)}
-//                       </strong>
-//                     </div>
-//                   </div>
-//                 )}
-//               </div>
-
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   Save and Issue Invoice
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={() => setShowBillForm(false)}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {bills.length === 0 ? (
-//             <p className="no-data-text">No invoices issued.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Invoice ID</th>
-//                     <th>Patient Name</th>
-//                     <th>Invoice Items</th>
-//                     <th>Total Amount (₹)</th>
-//                     <th>Due Date</th>
-//                     <th>Payment Status</th>
-//                     <th>Toggle Status</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {bills.map((bill) => (
-//                     <tr key={bill._id}>
-//                       <td>#{bill._id.substring(bill._id.length - 8)}</td>
-//                       <td className="strong-text">
-//                         {bill.patient?.user?.name || "N/A"}
-//                       </td>
-//                       <td>
-//                         {bill.items?.map((item: any, idx: number) => (
-//                           <div key={idx} className="bill-list-subitem">
-//                             • {item.description}: ₹{item.amount}
-//                           </div>
-//                         ))}
-//                       </td>
-//                       <td className="strong-text">₹{bill.totalAmount}</td>
-//                       <td>{new Date(bill.dueDate).toLocaleDateString()}</td>
-//                       <td>
-//                         <span
-//                           className={`badge badge-${bill.paymentStatus === "paid" ? "success" : "danger"}`}
-//                         >
-//                           {bill.paymentStatus}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         <button
-//                           onClick={() =>
-//                             handleToggleBillStatus(bill._id, bill.paymentStatus)
-//                           }
-//                           className={`btn btn-sm ${bill.paymentStatus === "paid" ? "btn-secondary" : "btn-primary"}`}
-//                         >
-//                           Mark as{" "}
-//                           {bill.paymentStatus === "paid" ? "Unpaid" : "Paid"}
-//                         </button>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default AdminDashboard;
-
-// import React, { useState, useEffect } from "react";
-// import { useAuth } from "../context/AuthContext";
-// import {
-//   Users,
-//   UserPlus,
-//   Calendar,
-//   DollarSign,
-//   CreditCard,
-//   FilePlus,
-//   Plus,
-//   Trash2,
-//   Edit2,
-//   Check,
-//   X,
-//   RefreshCw,
-// } from "lucide-react";
-
-// interface AdminDashboardProps {
-//   currentTab: string;
-// }
-
-// const emptyDoctorForm = {
-//   name: "",
-//   email: "",
-//   password: "",
-//   phoneNumber: "",
-//   specialization: "",
-//   department: "General Medicine",
-//   qualification: "",
-//   experience: 5,
-//   consultationFee: 500,
-//   availabilityDay: "Mon",
-//   availabilitySlots: "09:00 - 13:00, 14:00 - 17:00",
-// };
-
-// const emptyPatientForm = {
-//   name: "",
-//   phoneNumber: "",
-//   address: "",
-// };
-
-// export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-//   currentTab,
-// }) => {
-//   const { token, apiUrl } = useAuth();
-
-//   // States
-//   const [stats, setStats] = useState({
-//     doctorsCount: 0,
-//     patientsCount: 0,
-//     appointmentsCount: 0,
-//     totalRevenue: 0,
-//     unpaidBills: 0,
-//   });
-
-//   const [doctors, setDoctors] = useState<any[]>([]);
-//   const [patients, setPatients] = useState<any[]>([]);
-//   const [appointments, setAppointments] = useState<any[]>([]);
-//   const [bills, setBills] = useState<any[]>([]);
-//   const [loading, setLoading] = useState(true);
-
-//   // Forms States
-//   const [showDoctorForm, setShowDoctorForm] = useState(false);
-//   const [editingDoctorId, setEditingDoctorId] = useState<string | null>(null);
-//   const [doctorForm, setDoctorForm] = useState(emptyDoctorForm);
-
-//   const [showPatientForm, setShowPatientForm] = useState(false);
-//   const [editingPatientId, setEditingPatientId] = useState<string | null>(null);
-//   const [patientForm, setPatientForm] = useState(emptyPatientForm);
-
-//   const [showBillForm, setShowBillForm] = useState(false);
-//   const [billForm, setBillForm] = useState({
-//     patientId: "",
-//     appointmentId: "",
-//     itemDesc: "",
-//     itemAmount: 0,
-//     items: [] as { description: string; amount: number }[],
-//     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-//       .toISOString()
-//       .split("T")[0],
-//   });
-
-//   // Edit Appointment State
-//   const [editingApptId, setEditingApptId] = useState<string | null>(null);
-//   const [editApptForm, setEditApptForm] = useState({
-//     date: "",
-//     timeSlot: "",
-//     reason: "",
-//   });
-
-//   const fetchData = async () => {
-//     setLoading(true);
-//     try {
-//       const headers = { Authorization: `Bearer ${token}` };
-
-//       // Fetch Doctors
-//       const resDocs = await fetch(`${apiUrl}/doctors`, { headers });
-//       const dataDocs = await resDocs.json();
-//       const docsList = dataDocs.success ? dataDocs.data : [];
-//       setDoctors(docsList);
-
-//       // Fetch Patients
-//       const resPatients = await fetch(`${apiUrl}/patients`, { headers });
-//       const dataPatients = await resPatients.json();
-//       const patientsList = dataPatients.success ? dataPatients.data : [];
-//       setPatients(patientsList);
-
-//       // Fetch Appointments
-//       const resAppointments = await fetch(`${apiUrl}/appointments`, {
-//         headers,
-//       });
-//       const dataAppointments = await resAppointments.json();
-//       const apptsList = dataAppointments.success ? dataAppointments.data : [];
-//       setAppointments(apptsList);
-
-//       // Fetch Bills
-//       const resBills = await fetch(`${apiUrl}/bills`, { headers });
-//       const dataBills = await resBills.json();
-//       const billsList = dataBills.success ? dataBills.data : [];
-//       setBills(billsList);
-
-//       // Calculate Stats
-//       const revenue = billsList
-//         .filter((b: any) => b.paymentStatus === "paid")
-//         .reduce((sum: number, b: any) => sum + b.totalAmount, 0);
-
-//       const unpaidCount = billsList.filter(
-//         (b: any) => b.paymentStatus === "unpaid",
-//       ).length;
-
-//       setStats({
-//         doctorsCount: docsList.length,
-//         patientsCount: patientsList.length,
-//         appointmentsCount: apptsList.length,
-//         totalRevenue: revenue,
-//         unpaidBills: unpaidCount,
-//       });
-//     } catch (err) {
-//       console.error("Error loading admin dashboard data:", err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (token) {
-//       fetchData();
-//     }
-//   }, [token, currentTab]);
-
-//   // Doctor CRUD
-//   const resetDoctorForm = () => {
-//     setDoctorForm(emptyDoctorForm);
-//     setEditingDoctorId(null);
-//     setShowDoctorForm(false);
-//   };
-
-//   const handleOpenAddDoctor = () => {
-//     setDoctorForm(emptyDoctorForm);
-//     setEditingDoctorId(null);
-//     setShowDoctorForm(true);
-//   };
-
-//   const handleOpenEditDoctor = (doc: any) => {
-//     const firstAvailability = doc.availability?.[0];
-//     setDoctorForm({
-//       name: doc.user?.name || "",
-//       email: doc.user?.email || "",
-//       password: "", // left blank; only sent if the admin types a new one
-//       phoneNumber: doc.user?.phoneNumber || "",
-//       specialization: doc.specialization || "",
-//       department: doc.department || "General Medicine",
-//       qualification: doc.qualification || "",
-//       experience: doc.experience ?? 5,
-//       consultationFee: doc.consultationFee ?? 500,
-//       availabilityDay: firstAvailability?.day || "Mon",
-//       availabilitySlots: firstAvailability?.slots?.join(", ") || "",
-//     });
-//     setEditingDoctorId(doc._id);
-//     setShowDoctorForm(true);
-//   };
-
-//   const handleSubmitDoctor = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     try {
-//       const slotsArray = doctorForm.availabilitySlots
-//         .split(",")
-//         .map((s) => s.trim())
-//         .filter(Boolean);
-
-//       const isEditing = Boolean(editingDoctorId);
-
-//       const payload: any = {
-//         name: doctorForm.name,
-//         email: doctorForm.email,
-//         phoneNumber: doctorForm.phoneNumber,
-//         specialization: doctorForm.specialization,
-//         department: doctorForm.department,
-//         qualification: doctorForm.qualification,
-//         experience: Number(doctorForm.experience),
-//         consultationFee: Number(doctorForm.consultationFee),
-//         availability: [
-//           {
-//             day: doctorForm.availabilityDay,
-//             slots: slotsArray,
-//           },
-//         ],
-//       };
-
-//       // Only send password if creating, or if the admin explicitly typed one while editing
-//       if (!isEditing || doctorForm.password) {
-//         payload.password = doctorForm.password;
-//       }
-
-//       const res = await fetch(
-//         isEditing
-//           ? `${apiUrl}/doctors/${editingDoctorId}`
-//           : `${apiUrl}/doctors`,
-//         {
-//           method: isEditing ? "PUT" : "POST",
-//           headers: {
-//             "Content-Type": "application/json",
-//             Authorization: `Bearer ${token}`,
-//           },
-//           body: JSON.stringify(payload),
-//         },
-//       );
-//       const data = await res.json();
-//       if (data.success) {
-//         alert(
-//           isEditing
-//             ? "Doctor profile updated successfully"
-//             : "Doctor account created successfully",
-//         );
-//         resetDoctorForm();
-//         fetchData();
-//       } else {
-//         alert(
-//           data.message ||
-//             (isEditing ? "Failed to update doctor" : "Failed to create doctor"),
-//         );
-//       }
-//     } catch (error) {
-//       alert(
-//         editingDoctorId ? "Error updating doctor" : "Error creating doctor",
-//       );
-//     }
-//   };
-
-//   const handleDeleteDoctor = async (docId: string) => {
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to delete this doctor? All associated user credentials will be removed.",
-//       )
-//     )
-//       return;
-//     try {
-//       const res = await fetch(`${apiUrl}/doctors/${docId}`, {
-//         method: "DELETE",
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Doctor deleted successfully");
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to delete doctor");
-//       }
-//     } catch (err) {
-//       alert("Error deleting doctor");
-//     }
-//   };
-
-//   // Patient CRUD
-//   const resetPatientForm = () => {
-//     setPatientForm(emptyPatientForm);
-//     setEditingPatientId(null);
-//     setShowPatientForm(false);
-//   };
-
-//   const handleOpenEditPatient = (pat: any) => {
-//     setPatientForm({
-//       name: pat.user?.name || "",
-//       phoneNumber: pat.user?.phoneNumber || "",
-//       address: pat.address || "",
-//     });
-//     setEditingPatientId(pat._id);
-//     setShowPatientForm(true);
-//   };
-
-//   const handleSubmitPatient = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (!editingPatientId) return; // this form is edit-only; creation happens via Register
-
-//     try {
-//       const res = await fetch(`${apiUrl}/patients/${editingPatientId}`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//           name: patientForm.name,
-//           phoneNumber: patientForm.phoneNumber,
-//           address: patientForm.address,
-//         }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Patient details updated successfully");
-//         resetPatientForm();
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to update patient");
-//       }
-//     } catch (error) {
-//       alert("Error updating patient");
-//     }
-//   };
-
-//   const handleDeletePatient = async (patId: string) => {
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to delete this patient? Their account and records will be removed.",
-//       )
-//     )
-//       return;
-//     try {
-//       const res = await fetch(`${apiUrl}/patients/${patId}`, {
-//         method: "DELETE",
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Patient deleted successfully");
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to delete patient");
-//       }
-//     } catch (err) {
-//       alert("Error deleting patient");
-//     }
-//   };
-
-//   // Appointment status toggle
-//   const handleUpdateAppointment = async (apptId: string, status: string) => {
-//     try {
-//       const res = await fetch(`${apiUrl}/appointments/${apptId}/status`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ status }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to update appointment");
-//       }
-//     } catch (err) {
-//       alert("Error updating status");
-//     }
-//   };
-
-//   // Appointment Edit (reschedule)
-//   const handleOpenEditAppointment = (appt: any) => {
-//     setEditApptForm({
-//       date: new Date(appt.date).toISOString().split("T")[0],
-//       timeSlot: appt.timeSlot || "",
-//       reason: appt.reason || "",
-//     });
-//     setEditingApptId(appt._id);
-//   };
-
-//   const handleCancelEditAppointment = () => {
-//     setEditingApptId(null);
-//     setEditApptForm({ date: "", timeSlot: "", reason: "" });
-//   };
-
-//   const handleUpdateAppointmentDetails = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (!editingApptId) return;
-
-//     if (!editApptForm.date || !editApptForm.timeSlot || !editApptForm.reason) {
-//       alert("Please fill in all details");
-//       return;
-//     }
-
-//     try {
-//       const res = await fetch(`${apiUrl}/appointments/${editingApptId}/edit`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//           date: editApptForm.date,
-//           timeSlot: editApptForm.timeSlot,
-//           reason: editApptForm.reason,
-//         }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert(
-//           editingAppt?.status === "confirmed" && data.data?.status === "pending"
-//             ? "Appointment rescheduled — it now needs to be re-confirmed."
-//             : "Appointment updated successfully",
-//         );
-//         handleCancelEditAppointment();
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to update appointment");
-//       }
-//     } catch (err) {
-//       alert("Error updating appointment");
-//     }
-//   };
-
-//   // Billing Actions
-//   const handleAddBillItem = () => {
-//     if (!billForm.itemDesc || billForm.itemAmount <= 0) return;
-//     setBillForm({
-//       ...billForm,
-//       items: [
-//         ...billForm.items,
-//         { description: billForm.itemDesc, amount: Number(billForm.itemAmount) },
-//       ],
-//       itemDesc: "",
-//       itemAmount: 0,
-//     });
-//   };
-
-//   const handleCreateBill = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (billForm.items.length === 0) {
-//       alert("Please add at least one item to the invoice");
-//       return;
-//     }
-//     try {
-//       const res = await fetch(`${apiUrl}/bills`, {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//           patientId: billForm.patientId,
-//           appointmentId: billForm.appointmentId || undefined,
-//           items: billForm.items,
-//           dueDate: billForm.dueDate,
-//         }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         alert("Invoice generated successfully");
-//         setShowBillForm(false);
-//         setBillForm({
-//           patientId: "",
-//           appointmentId: "",
-//           itemDesc: "",
-//           itemAmount: 0,
-//           items: [],
-//           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-//             .toISOString()
-//             .split("T")[0],
-//         });
-//         fetchData();
-//       } else {
-//         alert(data.message || "Failed to generate invoice");
-//       }
-//     } catch (err) {
-//       alert("Error generating bill");
-//     }
-//   };
-
-//   const handleToggleBillStatus = async (
-//     billId: string,
-//     currentStatus: string,
-//   ) => {
-//     const nextStatus = currentStatus === "paid" ? "unpaid" : "paid";
-//     try {
-//       const res = await fetch(`${apiUrl}/bills/${billId}/status`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ paymentStatus: nextStatus }),
-//       });
-//       const data = await res.json();
-//       if (data.success) {
-//         fetchData();
-//       }
-//     } catch (err) {
-//       alert("Error updating payment status");
-//     }
-//   };
-
-//   // Doctor info for whichever appointment is currently being edited (used to build the slot dropdown)
-//   const editingAppt = appointments.find((a) => a._id === editingApptId);
-//   const editingDocInfo = doctors.find(
-//     (d) => d._id === (editingAppt?.doctor?._id || editingAppt?.doctor),
-//   );
-
-//   if (loading && doctors.length === 0) {
-//     return (
-//       <div className="dashboard-loading">
-//         <RefreshCw className="animate-spin" size={32} color="#0284c7" />
-//         <p>Loading dashboard metrics...</p>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="dashboard-content fade-in">
-//       <div className="dashboard-title-row">
-//         <h1>Admin Control Room</h1>
-//         <button onClick={fetchData} className="btn btn-secondary btn-sm">
-//           <RefreshCw size={16} />
-//           <span>Refresh Data</span>
-//         </button>
-//       </div>
-
-//       {currentTab === "overview" && (
-//         <>
-//           {/* Summary Cards */}
-//           <div className="stats-grid">
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper blue">
-//                 <UserPlus size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.doctorsCount}</h3>
-//                 <p>Doctors On Duty</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper green">
-//                 <Users size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.patientsCount}</h3>
-//                 <p>Registered Patients</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper warning">
-//                 <Calendar size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.appointmentsCount}</h3>
-//                 <p>Appointments Booked</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper info">
-//                 <DollarSign size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>₹{stats.totalRevenue.toLocaleString()}</h3>
-//                 <p>Revenue Collected</p>
-//               </div>
-//             </div>
-//             <div className="stat-card card">
-//               <div className="stat-icon-wrapper danger">
-//                 <CreditCard size={24} />
-//               </div>
-//               <div className="stat-numbers">
-//                 <h3>{stats.unpaidBills}</h3>
-//                 <p>Pending Invoices</p>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Quick Schedule Overview */}
-//           <div className="dashboard-layout-grid">
-//             <div className="card grid-span-2">
-//               <div className="card-header-row">
-//                 <h3>Recent Appointments</h3>
-//               </div>
-//               {appointments.length === 0 ? (
-//                 <p className="no-data-text">No appointments recorded yet.</p>
-//               ) : (
-//                 <div className="table-responsive">
-//                   <table className="table">
-//                     <thead>
-//                       <tr>
-//                         <th>Patient</th>
-//                         <th>Doctor</th>
-//                         <th>Date & Time</th>
-//                         <th>Status</th>
-//                       </tr>
-//                     </thead>
-//                     <tbody>
-//                       {appointments.slice(0, 5).map((appt) => (
-//                         <tr key={appt._id}>
-//                           <td>{appt.patient?.user?.name || "N/A"}</td>
-//                           <td>Dr. {appt.doctor?.user?.name || "N/A"}</td>
-//                           <td>
-//                             {new Date(appt.date).toLocaleDateString()} at{" "}
-//                             {appt.timeSlot}
-//                           </td>
-//                           <td>
-//                             <span
-//                               className={`badge badge-${
-//                                 appt.status === "confirmed"
-//                                   ? "success"
-//                                   : appt.status === "pending"
-//                                     ? "warning"
-//                                     : appt.status === "completed"
-//                                       ? "info"
-//                                       : "danger"
-//                               }`}
-//                             >
-//                               {appt.status}
-//                             </span>
-//                           </td>
-//                         </tr>
-//                       ))}
-//                     </tbody>
-//                   </table>
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-//         </>
-//       )}
-
-//       {currentTab === "doctors" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Medical Officers Directory</h3>
-//             <button
-//               onClick={() =>
-//                 showDoctorForm ? resetDoctorForm() : handleOpenAddDoctor()
-//               }
-//               className="btn btn-primary btn-sm"
-//             >
-//               <Plus size={16} />
-//               <span>Add Doctor Account</span>
-//             </button>
-//           </div>
-
-//           {showDoctorForm && (
-//             <form
-//               onSubmit={handleSubmitDoctor}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>
-//                 {editingDoctorId
-//                   ? "Edit Doctor Profile"
-//                   : "Register New Doctor"}
-//               </h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Full Name</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.name}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, name: e.target.value })
-//                     }
-//                     placeholder="e.g. John Watson"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Email Address</label>
-//                   <input
-//                     type="email"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.email}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, email: e.target.value })
-//                     }
-//                     placeholder="drjohn@hospital.com"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">
-//                     Password{" "}
-//                     {editingDoctorId && (
-//                       <span
-//                         style={{ fontWeight: 400, color: "var(--text-muted)" }}
-//                       >
-//                         (leave blank to keep current)
-//                       </span>
-//                     )}
-//                   </label>
-//                   <input
-//                     type="password"
-//                     className="form-control"
-//                     required={!editingDoctorId}
-//                     value={doctorForm.password}
-//                     onChange={(e) =>
-//                       setDoctorForm({ ...doctorForm, password: e.target.value })
-//                     }
-//                     placeholder="••••••"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Phone Number</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.phoneNumber}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         phoneNumber: e.target.value,
-//                       })
-//                     }
-//                     placeholder="9998887776"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Specialization</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.specialization}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         specialization: e.target.value,
-//                       })
-//                     }
-//                     placeholder="e.g. Cardiology specialist"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Department</label>
-//                   <select
-//                     className="form-control"
-//                     value={doctorForm.department}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         department: e.target.value,
-//                       })
-//                     }
-//                   >
-//                     <option value="Cardiology">Cardiology</option>
-//                     <option value="Neurology">Neurology</option>
-//                     <option value="Pediatrics">Pediatrics</option>
-//                     <option value="General Medicine">General Medicine</option>
-//                     <option value="Orthopedics">Orthopedics</option>
-//                     <option value="Critical Care">Critical care</option>
-//                     <option value="Dermatology">Dermatology</option>
-//                   </select>
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Qualifications</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.qualification}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         qualification: e.target.value,
-//                       })
-//                     }
-//                     placeholder="e.g. MBBS, MD"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Years of Experience</label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.experience}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         experience: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Consultation Fee (₹)</label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.consultationFee}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         consultationFee: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Availability Day</label>
-//                   <select
-//                     className="form-control"
-//                     value={doctorForm.availabilityDay}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         availabilityDay: e.target.value,
-//                       })
-//                     }
-//                   >
-//                     <option value="Mon">Mon</option>
-//                     <option value="Tue">Tue</option>
-//                     <option value="Wed">Wed</option>
-//                     <option value="Thu">Thu</option>
-//                     <option value="Fri">Fri</option>
-//                     <option value="Sat">Sat</option>
-//                     <option value="Sun">Sun</option>
-//                   </select>
-//                 </div>
-//                 <div className="form-group grid-span-2-col">
-//                   <label className="form-label">Slots (comma separated)</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={doctorForm.availabilitySlots}
-//                     onChange={(e) =>
-//                       setDoctorForm({
-//                         ...doctorForm,
-//                         availabilitySlots: e.target.value,
-//                       })
-//                     }
-//                     placeholder="09:00 - 11:00, 15:00 - 17:00"
-//                   />
-//                 </div>
-//               </div>
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   {editingDoctorId ? "Save Changes" : "Create Doctor Profile"}
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={resetDoctorForm}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {doctors.length === 0 ? (
-//             <p className="no-data-text">No doctors registered yet.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Doctor Name</th>
-//                     <th>Department</th>
-//                     <th>Speciality</th>
-//                     <th>Qualifications</th>
-//                     <th>Experience</th>
-//                     <th>Fee (₹)</th>
-//                     <th>Availability</th>
-//                     <th>Actions</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {doctors.map((doc) => (
-//                     <tr key={doc._id}>
-//                       <td className="strong-text">
-//                         Dr. {doc.user?.name || "N/A"}
-//                       </td>
-//                       <td>{doc.department}</td>
-//                       <td>{doc.specialization}</td>
-//                       <td>{doc.qualification}</td>
-//                       <td>{doc.experience} Years</td>
-//                       <td>₹{doc.consultationFee}</td>
-//                       <td>
-//                         {doc.availability?.map((av: any, idx: number) => (
-//                           <div key={idx} className="availability-slot-badge">
-//                             <strong>{av.day}</strong>: {av.slots.join(", ")}
-//                           </div>
-//                         ))}
-//                       </td>
-//                       <td>
-//                         <div className="table-action-buttons">
-//                           <button
-//                             onClick={() => handleOpenEditDoctor(doc)}
-//                             className="btn btn-secondary btn-sm"
-//                             title="Edit Profile"
-//                           >
-//                             <Edit2 size={14} />
-//                           </button>
-//                           <button
-//                             onClick={() => handleDeleteDoctor(doc._id)}
-//                             className="btn btn-danger btn-sm"
-//                             title="Delete Profile"
-//                           >
-//                             <Trash2 size={14} />
-//                           </button>
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "patients" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Registered Patients</h3>
-//           </div>
-
-//           {showPatientForm && (
-//             <form
-//               onSubmit={handleSubmitPatient}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>Edit Patient Details</h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Full Name</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={patientForm.name}
-//                     onChange={(e) =>
-//                       setPatientForm({ ...patientForm, name: e.target.value })
-//                     }
-//                     placeholder="e.g. Jane Doe"
-//                   />
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Phone Number</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={patientForm.phoneNumber}
-//                     onChange={(e) =>
-//                       setPatientForm({
-//                         ...patientForm,
-//                         phoneNumber: e.target.value,
-//                       })
-//                     }
-//                     placeholder="9876543210"
-//                   />
-//                 </div>
-//                 <div className="form-group grid-span-2-col">
-//                   <label className="form-label">Place</label>
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     required
-//                     value={patientForm.address}
-//                     onChange={(e) =>
-//                       setPatientForm({
-//                         ...patientForm,
-//                         address: e.target.value,
-//                       })
-//                     }
-//                     placeholder="Street address, City, ZIP Code"
-//                   />
-//                 </div>
-//               </div>
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   Save Changes
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={resetPatientForm}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {patients.length === 0 ? (
-//             <p className="no-data-text">
-//               No patients registered in the database.
-//             </p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Patient Name</th>
-//                     <th>Phone Number</th>
-//                     <th>Address</th>
-//                     <th>Joined Date</th>
-//                     <th>Actions</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {patients.map((pat) => (
-//                     <tr key={pat._id}>
-//                       <td className="strong-text">{pat.user?.name || "N/A"}</td>
-//                       <td>{pat.user?.phoneNumber || "N/A"}</td>
-//                       <td>{pat.address}</td>
-//                       <td>{new Date(pat.createdAt).toLocaleDateString()}</td>
-//                       <td>
-//                         <div className="table-action-buttons">
-//                           <button
-//                             onClick={() => handleOpenEditPatient(pat)}
-//                             className="btn btn-secondary btn-sm"
-//                             title="Edit Patient"
-//                           >
-//                             <Edit2 size={14} />
-//                           </button>
-//                           <button
-//                             onClick={() => handleDeletePatient(pat._id)}
-//                             className="btn btn-danger btn-sm"
-//                             title="Delete Patient"
-//                           >
-//                             <Trash2 size={14} />
-//                           </button>
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "appointments" && (
-//         <div className="tab-pane-container">
-//           <h3>Patient Appointment Schedule</h3>
-
-//           {editingApptId && (
-//             <form
-//               onSubmit={handleUpdateAppointmentDetails}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>Reschedule Appointment</h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Date</label>
-//                   <input
-//                     type="date"
-//                     className="form-control"
-//                     required
-//                     value={editApptForm.date}
-//                     onChange={(e) =>
-//                       setEditApptForm({
-//                         ...editApptForm,
-//                         date: e.target.value,
-//                       })
-//                     }
-//                   />
-//                 </div>
-
-//                 <div className="form-group grid-span-2-col">
-//                   <label className="form-label">Select Available Slot</label>
-//                   {editingDocInfo?.availability &&
-//                   editingDocInfo.availability.length > 0 ? (
-//                     <select
-//                       className="form-control"
-//                       required
-//                       value={editApptForm.timeSlot}
-//                       onChange={(e) =>
-//                         setEditApptForm({
-//                           ...editApptForm,
-//                           timeSlot: e.target.value,
-//                         })
-//                       }
-//                     >
-//                       <option value="">-- Choose Time Slot --</option>
-//                       {editingDocInfo.availability.map((av: any) => (
-//                         <optgroup key={av._id} label={av.day}>
-//                           {av.slots.map((slot: string, sIdx: number) => (
-//                             <option key={sIdx} value={`${av.day}: ${slot}`}>
-//                               {av.day} - {slot}
-//                             </option>
-//                           ))}
-//                         </optgroup>
-//                       ))}
-//                     </select>
-//                   ) : (
-//                     <input
-//                       type="text"
-//                       className="form-control"
-//                       required
-//                       placeholder="e.g. Mon: 09:00 - 11:00"
-//                       value={editApptForm.timeSlot}
-//                       onChange={(e) =>
-//                         setEditApptForm({
-//                           ...editApptForm,
-//                           timeSlot: e.target.value,
-//                         })
-//                       }
-//                     />
-//                   )}
-//                 </div>
-
-//                 <div className="form-group grid-span-2-col">
-//                   <label className="form-label">Reason for Visit</label>
-//                   <textarea
-//                     className="form-control"
-//                     required
-//                     rows={3}
-//                     value={editApptForm.reason}
-//                     onChange={(e) =>
-//                       setEditApptForm({
-//                         ...editApptForm,
-//                         reason: e.target.value,
-//                       })
-//                     }
-//                   />
-//                 </div>
-//               </div>
-
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   Save Changes
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={handleCancelEditAppointment}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {appointments.length === 0 ? (
-//             <p className="no-data-text">No appointments booked.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Patient</th>
-//                     <th>Doctor</th>
-//                     <th>Reason</th>
-//                     <th>Date & Slot</th>
-//                     <th>Status</th>
-//                     <th>Manage</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {appointments.map((appt) => (
-//                     <tr key={appt._id}>
-//                       <td className="strong-text">
-//                         {appt.patient?.user?.name || "N/A"}
-//                       </td>
-//                       <td>
-//                         Dr. {appt.doctor?.user?.name || "N/A"} (
-//                         {appt.doctor?.department})
-//                       </td>
-//                       <td>{appt.reason}</td>
-//                       <td>
-//                         {new Date(appt.date).toLocaleDateString()} -{" "}
-//                         {appt.timeSlot}
-//                       </td>
-//                       <td>
-//                         <span
-//                           className={`badge badge-${
-//                             appt.status === "confirmed"
-//                               ? "success"
-//                               : appt.status === "pending"
-//                                 ? "warning"
-//                                 : appt.status === "completed"
-//                                   ? "info"
-//                                   : "danger"
-//                           }`}
-//                         >
-//                           {appt.status}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         <div className="table-action-buttons">
-//                           {(appt.status === "pending" ||
-//                             appt.status === "confirmed") && (
-//                             <button
-//                               onClick={() => handleOpenEditAppointment(appt)}
-//                               className="btn btn-secondary btn-sm"
-//                               title="Reschedule Appointment"
-//                             >
-//                               <Edit2 size={14} />
-//                             </button>
-//                           )}
-//                           {appt.status === "pending" && (
-//                             <button
-//                               onClick={() =>
-//                                 handleUpdateAppointment(appt._id, "confirmed")
-//                               }
-//                               className="btn btn-secondary btn-sm text-success"
-//                               title="Confirm Appointment"
-//                             >
-//                               <Check size={14} />
-//                             </button>
-//                           )}
-//                           {appt.status !== "cancelled" &&
-//                             appt.status !== "completed" && (
-//                               <button
-//                                 onClick={() =>
-//                                   handleUpdateAppointment(appt._id, "cancelled")
-//                                 }
-//                                 className="btn btn-secondary btn-sm text-danger"
-//                                 title="Cancel Appointment"
-//                               >
-//                                 <X size={14} />
-//                               </button>
-//                             )}
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {currentTab === "bills" && (
-//         <div className="tab-pane-container">
-//           <div className="card-header-row">
-//             <h3>Hospital Billings & Invoices</h3>
-//             <button
-//               onClick={() => setShowBillForm(!showBillForm)}
-//               className="btn btn-primary btn-sm"
-//             >
-//               <FilePlus size={16} />
-//               <span>Generate New Invoice</span>
-//             </button>
-//           </div>
-
-//           {showBillForm && (
-//             <form
-//               onSubmit={handleCreateBill}
-//               className="card inline-form-card fade-in"
-//             >
-//               <h4>Generate Invoice</h4>
-//               <div className="form-grid-three">
-//                 <div className="form-group">
-//                   <label className="form-label">Select Patient</label>
-//                   <select
-//                     className="form-control"
-//                     required
-//                     value={billForm.patientId}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, patientId: e.target.value })
-//                     }
-//                   >
-//                     <option value="">-- Select Patient --</option>
-//                     {patients.map((p) => (
-//                       <option key={p._id} value={p._id}>
-//                         {p.user?.name} ({p.user?.phoneNumber})
-//                       </option>
-//                     ))}
-//                   </select>
-//                 </div>
-//                 <div className="form-group">
-//                   <label className="form-label">Due Date</label>
-//                   <input
-//                     type="date"
-//                     className="form-control"
-//                     required
-//                     value={billForm.dueDate}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, dueDate: e.target.value })
-//                     }
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* Add line item */}
-//               <div className="billing-line-item-creator">
-//                 <h5>Invoice Items</h5>
-//                 <div className="line-item-fields">
-//                   <input
-//                     type="text"
-//                     className="form-control"
-//                     placeholder="Item description (e.g. Lab Test, Consultation)"
-//                     value={billForm.itemDesc}
-//                     onChange={(e) =>
-//                       setBillForm({ ...billForm, itemDesc: e.target.value })
-//                     }
-//                   />
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     placeholder="Amount (₹)"
-//                     value={billForm.itemAmount || ""}
-//                     onChange={(e) =>
-//                       setBillForm({
-//                         ...billForm,
-//                         itemAmount: Number(e.target.value),
-//                       })
-//                     }
-//                   />
-//                   <button
-//                     type="button"
-//                     onClick={handleAddBillItem}
-//                     className="btn btn-secondary"
-//                   >
-//                     Add Item
-//                   </button>
-//                 </div>
-
-//                 {billForm.items.length > 0 && (
-//                   <div className="billing-items-list">
-//                     <h6>Added Items:</h6>
-//                     <ul>
-//                       {billForm.items.map((item, idx) => (
-//                         <li key={idx}>
-//                           <span>{item.description}</span>
-//                           <strong>₹{item.amount}</strong>
-//                         </li>
-//                       ))}
-//                     </ul>
-//                     <div className="bill-total-calc">
-//                       Total:{" "}
-//                       <strong>
-//                         ₹{billForm.items.reduce((s, i) => s + i.amount, 0)}
-//                       </strong>
-//                     </div>
-//                   </div>
-//                 )}
-//               </div>
-
-//               <div className="form-actions-row">
-//                 <button type="submit" className="btn btn-primary">
-//                   Save and Issue Invoice
-//                 </button>
-//                 <button
-//                   type="button"
-//                   onClick={() => setShowBillForm(false)}
-//                   className="btn btn-secondary"
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </form>
-//           )}
-
-//           {bills.length === 0 ? (
-//             <p className="no-data-text">No invoices issued.</p>
-//           ) : (
-//             <div className="table-responsive fade-in">
-//               <table className="table">
-//                 <thead>
-//                   <tr>
-//                     <th>Invoice ID</th>
-//                     <th>Patient Name</th>
-//                     <th>Invoice Items</th>
-//                     <th>Total Amount (₹)</th>
-//                     <th>Due Date</th>
-//                     <th>Payment Status</th>
-//                     <th>Toggle Status</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {bills.map((bill) => (
-//                     <tr key={bill._id}>
-//                       <td>#{bill._id.substring(bill._id.length - 8)}</td>
-//                       <td className="strong-text">
-//                         {bill.patient?.user?.name || "N/A"}
-//                       </td>
-//                       <td>
-//                         {bill.items?.map((item: any, idx: number) => (
-//                           <div key={idx} className="bill-list-subitem">
-//                             • {item.description}: ₹{item.amount}
-//                           </div>
-//                         ))}
-//                       </td>
-//                       <td className="strong-text">₹{bill.totalAmount}</td>
-//                       <td>{new Date(bill.dueDate).toLocaleDateString()}</td>
-//                       <td>
-//                         <span
-//                           className={`badge badge-${bill.paymentStatus === "paid" ? "success" : "danger"}`}
-//                         >
-//                           {bill.paymentStatus}
-//                         </span>
-//                       </td>
-//                       <td>
-//                         <button
-//                           onClick={() =>
-//                             handleToggleBillStatus(bill._id, bill.paymentStatus)
-//                           }
-//                           className={`btn btn-sm ${bill.paymentStatus === "paid" ? "btn-secondary" : "btn-primary"}`}
-//                         >
-//                           Mark as{" "}
-//                           {bill.paymentStatus === "paid" ? "Unpaid" : "Paid"}
-//                         </button>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default AdminDashboard;
-
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   Users,
@@ -4764,6 +13,7 @@ import {
   Check,
   X,
   Stethoscope,
+  Ticket,
   Eye,
   RefreshCw,
 } from "lucide-react";
@@ -4814,8 +64,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const { token, apiUrl } = useAuth();
 
-  const navigate = useNavigate();
-
   // States
   const [stats, setStats] = useState({
     doctorsCount: 0,
@@ -4858,14 +106,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [viewingApptId, setViewingApptId] = useState<string | null>(null);
   const [viewApptNotes, setViewApptNotes] = useState("");
 
+  // const handleOpenViewAppointment = (appt: any) => {
+  //   setViewApptNotes(appt.notes || "");
+  //   setViewingApptId(appt._id);
+  // };
+
   const handleOpenViewAppointment = (appt: any) => {
     setViewApptNotes(appt.notes || "");
     setViewingApptId(appt._id);
+
+    if (appt.tokenNumber) {
+      setGeneratedToken({
+        tokenNumber: appt.tokenNumber,
+        patientName: appt.patient?.user?.name || "N/A",
+        phoneNumber: appt.patient?.user?.phoneNumber || "N/A",
+        doctorName: appt.doctor?.user?.name || "N/A",
+        department: appt.doctor?.department || "N/A",
+        date: new Date(appt.date).toLocaleDateString(),
+        timeSlot: appt.timeSlot,
+        generatedAt: appt.tokenGeneratedAt || "",
+      });
+    } else {
+      setGeneratedToken(null);
+    }
   };
+
+  // const handleCloseViewAppointment = () => {
+  //   setViewingApptId(null);
+  //   setViewApptNotes("");
+  // };
 
   const handleCloseViewAppointment = () => {
     setViewingApptId(null);
     setViewApptNotes("");
+    setGeneratedToken(null);
   };
 
   const handleSaveApptNotes = async (apptId: string, status: string) => {
@@ -4887,6 +161,704 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     } catch (err) {
       alert("Error saving notes");
     }
+  };
+
+  const [generatedToken, setGeneratedToken] = useState(null);
+
+  // const handleGenerateToken = (appt) => {
+  //   // Mock logic — replace with API call once backend is ready.
+  //   // e.g. const res = await api.post(`/appointments/${appt._id}/generate-token`);
+
+  //   const today = new Date().toDateString();
+  //   const storageKey = `tokenCounter-${appt.doctor?._id}-${today}`;
+  //   const lastCount = parseInt(localStorage.getItem(storageKey) || "0", 10);
+  //   const newCount = lastCount + 1;
+  //   localStorage.setItem(storageKey, newCount);
+
+  //   setGeneratedToken({
+  //     tokenNumber: newCount,
+  //     patientName: appt.patient?.user?.name || "N/A",
+  //     phoneNumber: appt.patient?.user?.phoneNumber || "N/A",
+  //     doctorName: appt.doctor?.user?.name || "N/A",
+  //     department: appt.doctor?.department || "N/A",
+  //     timeSlot: appt.timeSlot,
+  //     generatedAt: new Date().toLocaleTimeString([], {
+  //       hour: "2-digit",
+  //       minute: "2-digit",
+  //     }),
+  //   });
+  // };
+
+  const handleGenerateToken = (appt: any) => {
+    // ⚠️ MOCK LOGIC — replace with a real backend call once ready, e.g.:
+    // const res = await fetch(`${apiUrl}/appointments/${appt._id}/generate-token`, {
+    //   method: "POST",
+    //   headers: { Authorization: `Bearer ${token}` },
+    // });
+    // const data = await res.json();
+    // This MUST be an atomic increment server-side (findOneAndUpdate + $inc on a
+    // per-doctor-per-day counter) — two admins generating tokens at the same
+    // moment must never get the same number. localStorage can't guarantee that,
+    // it's only safe as a single-admin placeholder.
+
+    const today = new Date().toDateString();
+    const storageKey = `tokenCounter-${appt.doctor?._id}-${today}`;
+    const lastCount = parseInt(localStorage.getItem(storageKey) || "0", 10);
+    const newCount = lastCount + 1;
+    localStorage.setItem(storageKey, newCount);
+
+    const tokenData = {
+      tokenNumber: newCount,
+      patientName: appt.patient?.user?.name || "N/A",
+      phoneNumber: appt.patient?.user?.phoneNumber || "N/A",
+      doctorName: appt.doctor?.user?.name || "N/A",
+      department: appt.doctor?.department || "N/A",
+      date: new Date(appt.date).toLocaleDateString(),
+      timeSlot: appt.timeSlot,
+      generatedAt: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+
+    setGeneratedToken(tokenData);
+
+    // Persist onto the appointment in local state so re-opening this
+    // appointment later shows the same token instead of generating a new one.
+    setAppointments((prev) =>
+      prev.map((a) =>
+        a._id === appt._id
+          ? {
+              ...a,
+              tokenNumber: newCount,
+              tokenGeneratedAt: tokenData.generatedAt,
+            }
+          : a,
+      ),
+    );
+  };
+
+  const handlePrintTokenSlip = (tokenData: any) => {
+    const printWindow = window.open("", "_blank", "width=380,height=600");
+    if (!printWindow) {
+      alert("Please allow pop-ups to print the token slip");
+      return;
+    }
+
+    //   printWindow.document.write(`
+    //   <!DOCTYPE html>
+    //   <html>
+    //     <head>
+    //       <title>Token Slip</title>
+    //       <style>
+    //         * { box-sizing: border-box; }
+    //         body {
+    //           font-family: 'Segoe UI', Arial, sans-serif;
+    //           padding: 20px;
+    //           color: #111;
+    //         }
+    //         .slip-header {
+    //           text-align: center;
+    //           border-bottom: 2px dashed #333;
+    //           padding-bottom: 12px;
+    //           margin-bottom: 16px;
+    //         }
+    //         .slip-header h2 { margin: 0 0 4px; font-size: 18px; }
+    //         .slip-header p { margin: 0; font-size: 12px; color: #555; }
+    //         .token-number-block {
+    //           text-align: center;
+    //           margin: 16px 0 20px;
+    //         }
+    //         .token-number-block .label {
+    //           font-size: 12px;
+    //           color: #555;
+    //           text-transform: uppercase;
+    //           letter-spacing: 1px;
+    //         }
+    //         .token-number-block .number {
+    //           font-size: 56px;
+    //           font-weight: 800;
+    //           line-height: 1.1;
+    //         }
+    //         .slip-details {
+    //           font-size: 13px;
+    //           border-top: 1px dashed #333;
+    //           padding-top: 12px;
+    //         }
+    //         .slip-details div {
+    //           display: flex;
+    //           justify-content: space-between;
+    //           margin-bottom: 6px;
+    //         }
+    //         .slip-details span:first-child { color: #555; }
+    //         .slip-details span:last-child { font-weight: 600; text-align: right; }
+    //         .slip-footer {
+    //           text-align: center;
+    //           font-size: 11px;
+    //           color: #888;
+    //           margin-top: 16px;
+    //           border-top: 2px dashed #333;
+    //           padding-top: 10px;
+    //         }
+    //       </style>
+    //     </head>
+    //     <body>
+    //       <div class="slip-header">
+    //         <h2>City Hospital</h2>
+    //         <p>OPD Token Slip</p>
+    //       </div>
+
+    //       <div class="token-number-block">
+    //         <div class="label">Token No.</div>
+    //         <div class="number">${tokenData.tokenNumber}</div>
+    //       </div>
+
+    //       <div class="slip-details">
+    //         <div><span>Patient</span><span>${tokenData.patientName}</span></div>
+    //         <div><span>Phone</span><span>${tokenData.phoneNumber}</span></div>
+    //         <div><span>Doctor</span><span>Dr. ${tokenData.doctorName}</span></div>
+    //         <div><span>Department</span><span>${tokenData.department}</span></div>
+    //         <div><span>Date</span><span>${tokenData.date}</span></div>
+    //         <div><span>Slot</span><span>${tokenData.timeSlot}</span></div>
+    //         <div><span>Issued At</span><span>${tokenData.generatedAt}</span></div>
+    //       </div>
+
+    //       <div class="slip-footer">
+    //         Please wait for your token number to be called.<br/>
+    //         Keep this slip until your consultation.
+    //       </div>
+    //     </body>
+    //   </html>
+    // `);
+
+    //     printWindow.document.write(`
+    //   <!DOCTYPE html>
+    // <html>
+    // <head>
+    // <meta charset="UTF-8">
+    // <title>OPD Token</title>
+
+    // <style>
+
+    // *{
+    //     margin:0;
+    //     padding:0;
+    //     box-sizing:border-box;
+    // }
+
+    // body{
+    //     font-family:Arial,Helvetica,sans-serif;
+    //     background:#fff;
+    //     color:#000;
+    //     width:300px;
+    //     margin:auto;
+    // }
+
+    // .ticket{
+
+    //     border:2px solid #000;
+    //     padding:14px;
+    // }
+
+    // /* ---------- Header ---------- */
+
+    // .header{
+    //     text-align:center;
+    //     border-bottom:2px dashed #777;
+    //     padding-bottom:12px;
+    //     margin-bottom:12px;
+    // }
+
+    // .logo{
+    //     width:58px;
+    //     height:58px;
+    //     margin:auto;
+    //     border:2px solid #0284c7;
+    //     border-radius:50%;
+    //     display:flex;
+    //     justify-content:center;
+    //     align-items:center;
+    //     margin-bottom:8px;
+    // }
+
+    // .logo svg{
+    //     color:#0284c7;
+    // }
+
+    // .hospital-name{
+    //     font-size:22px;
+    //     font-weight:700;
+    // }
+
+    // .hospital-sub{
+    //     font-size:11px;
+    //     color:#555;
+    //     margin-top:2px;
+    // }
+
+    // .slip-title{
+
+    //     margin-top:12px;
+    //     font-size:15px;
+    //     font-weight:bold;
+    //     letter-spacing:2px;
+    // }
+
+    // /* ---------- Token ---------- */
+
+    // .token-box{
+
+    //     border:3px solid #000;
+    //     text-align:center;
+    //     padding:12px;
+    //     margin:18px 0;
+    // }
+
+    // .token-label{
+
+    //     font-size:13px;
+    //     text-transform:uppercase;
+    //     letter-spacing:1px;
+    //     color:#444;
+    // }
+
+    // .token-number{
+
+    //     font-size:68px;
+    //     font-weight:900;
+    //     line-height:1;
+    //     margin-top:4px;
+    // }
+
+    // /* ---------- Details ---------- */
+
+    // .details{
+    //     width:100%;
+    //     border-collapse:collapse;
+    //     font-size:13px;
+    // }
+
+    // .details td{
+    //     padding:6px 0;
+    //     vertical-align:top;
+    // }
+
+    // .details td:first-child{
+
+    //     color:#555;
+    //     width:90px;
+    // }
+
+    // .details td:last-child{
+    //     text-align:right;
+    //     font-weight:600;
+    // }
+
+    // /* ---------- Footer ---------- */
+
+    // .footer{
+
+    //     margin-top:16px;
+    //     border-top:2px dashed #777;
+    //     padding-top:12px;
+    //     text-align:center;
+    //     font-size:11px;
+    //     color:#555;
+    // }
+
+    // .notice{
+
+    //     margin-top:8px;
+    //     font-weight:bold;
+    //     color:#000;
+    // }
+
+    // .powered{
+
+    //     margin-top:10px;
+    //     font-size:10px;
+    //     color:#888;
+    // }
+
+    // </style>
+
+    // </head>
+
+    // <body>
+
+    // <div class="ticket">
+
+    //     <div class="header">
+
+    //         <!-- Lucide Activity Icon -->
+    //         <div class="logo">
+
+    //             <svg xmlns="http://www.w3.org/2000/svg"
+    //                  width="28"
+    //                  height="28"
+    //                  viewBox="0 0 24 24"
+    //                  fill="none"
+    //                  stroke="#0284c7"
+    //                  stroke-width="2.5"
+    //                  stroke-linecap="round"
+    //                  stroke-linejoin="round">
+
+    //                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+
+    //             </svg>
+
+    //         </div>
+
+    //         <div class="hospital-name">
+    //             MediCare Plus
+    //         </div>
+
+    //         <div class="hospital-sub">
+    //             Hospital Management System
+    //         </div>
+
+    //         <div class="slip-title">
+    //             OPD TOKEN
+    //         </div>
+
+    //     </div>
+
+    //     <div class="token-box">
+
+    //         <div class="token-label">
+    //             Token Number
+    //         </div>
+
+    //         <div class="token-number">
+    //             ${tokenData.tokenNumber}
+    //         </div>
+
+    //     </div>
+
+    //     <table class="details">
+
+    //         <tr>
+    //             <td>Patient</td>
+    //             <td>${tokenData.patientName}</td>
+    //         </tr>
+
+    //         <tr>
+    //             <td>Phone</td>
+    //             <td>${tokenData.phoneNumber}</td>
+    //         </tr>
+
+    //         <tr>
+    //             <td>Doctor</td>
+    //             <td>Dr. ${tokenData.doctorName}</td>
+    //         </tr>
+
+    //         <tr>
+    //             <td>Department</td>
+    //             <td>${tokenData.department}</td>
+    //         </tr>
+
+    //         <tr>
+    //             <td>Date</td>
+    //             <td>${tokenData.date}</td>
+    //         </tr>
+
+    //         <tr>
+    //             <td>Time Slot</td>
+    //             <td>${tokenData.timeSlot}</td>
+    //         </tr>
+
+    //         <tr>
+    //             <td>Issued</td>
+    //             <td>${tokenData.generatedAt}</td>
+    //         </tr>
+
+    //     </table>
+
+    //     <div class="footer">
+
+    //         Please wait until your token number is displayed or announced.
+
+    //         <div class="notice">
+    //             Keep this slip until consultation is completed.
+    //         </div>
+
+    //         <div class="powered">
+    //             Thank you for choosing MediCare Plus
+    //         </div>
+
+    //     </div>
+
+    // </div>
+
+    // </body>
+    // </html>
+    // `);
+
+    printWindow.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>OPD Token</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:#fff;
+    color:#000;
+    width:300px;
+    margin:auto;
+    padding:12px;
+}
+
+.ticket{
+    border:1.5px solid #000;
+}
+
+/* HEADER */
+
+.header{
+    text-align:center;
+    border-bottom:1px solid #000;
+    padding:12px;
+}
+
+.logo{
+    width:50px;
+    height:50px;
+    margin:auto;
+    border:2px solid #0284c7;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-bottom:8px;
+}
+
+.logo svg{
+    width:26px;
+    height:26px;
+}
+
+.hospital{
+    font-size:22px;
+    font-weight:bold;
+}
+
+.sub{
+    font-size:11px;
+    color:#555;
+}
+
+.title{
+    margin-top:8px;
+    font-size:15px;
+    font-weight:bold;
+    letter-spacing:2px;
+}
+
+/* TOKEN */
+
+.token{
+
+    margin:14px;
+    border:2px solid #000;
+    text-align:center;
+    padding:10px;
+}
+
+.token span{
+
+    display:block;
+    font-size:12px;
+    color:#555;
+}
+
+.token h1{
+
+    font-size:64px;
+    line-height:1;
+    margin-top:6px;
+}
+
+/* DETAILS */
+
+table{
+
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+}
+
+table td{
+
+    border-top:1px solid #ddd;
+    padding:7px 12px;
+}
+
+table td:first-child{
+
+    color:#555;
+    width:35%;
+}
+
+table td:last-child{
+
+    text-align:right;
+    font-weight:bold;
+}
+
+/* FOOTER */
+
+.footer{
+
+    border-top:1px dashed #999;
+    text-align:center;
+    padding:12px;
+    font-size:11px;
+}
+
+.note{
+
+    margin-top:6px;
+    font-weight:bold;
+}
+
+.bar{
+
+    margin:10px auto;
+    width:180px;
+    height:34px;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            #000 0,
+            #000 2px,
+            #fff 2px,
+            #fff 4px
+        );
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="ticket">
+
+<div class="header">
+
+<div class="logo">
+
+<svg xmlns="http://www.w3.org/2000/svg"
+viewBox="0 0 24 24"
+fill="none"
+stroke="#0284c7"
+stroke-width="2.5"
+stroke-linecap="round"
+stroke-linejoin="round">
+
+<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+
+</svg>
+
+</div>
+
+<div class="hospital">
+MediCare Plus
+</div>
+
+<div class="sub">
+Hospital Management System
+</div>
+
+<div class="title">
+OPD TOKEN
+</div>
+
+</div>
+
+<div class="token">
+
+<span>TOKEN NUMBER</span>
+
+<h1>${tokenData.tokenNumber}</h1>
+
+</div>
+
+<table>
+
+<tr>
+<td>Patient</td>
+<td>${tokenData.patientName}</td>
+</tr>
+
+<tr>
+<td>Doctor</td>
+<td>Dr. ${tokenData.doctorName}</td>
+</tr>
+
+<tr>
+<td>Department</td>
+<td>${tokenData.department}</td>
+</tr>
+
+<tr>
+<td>Phone</td>
+<td>${tokenData.phoneNumber}</td>
+</tr>
+
+<tr>
+<td>Date</td>
+<td>${tokenData.date}</td>
+</tr>
+
+<tr>
+<td>Time</td>
+<td>${tokenData.timeSlot}</td>
+</tr>
+
+<tr>
+<td>Issued</td>
+<td>${tokenData.generatedAt}</td>
+</tr>
+
+</table>
+
+<div class="footer">
+
+<div class="bar"></div>
+
+Please wait until your token number is called.
+
+<div class="note">
+Keep this slip for consultation.
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>
+`);
+
+    printWindow.document.close();
+    printWindow.focus();
+
+    // Give the new window a beat to finish rendering before invoking print
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   const [showBookForApptForm, setShowBookForApptForm] = useState(false);
@@ -5177,33 +1149,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // const handlePatientPhoneChange = (value: string) => {
-  //   const match = patients.find((p) => p.user?.phoneNumber === value);
-
-  //   if (match) {
-  //     // Exact match found — auto-fill the rest of the form from the
-  //     // existing record and switch this form into "edit" mode for them,
-  //     // so submitting updates the existing patient instead of creating
-  //     // a duplicate.
-  //     setPatientForm({
-  //       name: match.user?.name || "",
-  //       phoneNumber: value,
-  //       address: match.address || "",
-  //     });
-  //     setEditingPatientId(match._id);
-  //     setPhoneAutoMatched(true);
-  //   } else {
-  //     // No exact match — if we were previously auto-matched to a patient
-  //     // (not one the admin explicitly opened via the Edit button), revert
-  //     // back to "create new" mode as they keep typing.
-  //     if (phoneAutoMatched) {
-  //       setEditingPatientId(null);
-  //       setPhoneAutoMatched(false);
-  //     }
-  //     setPatientForm((prev) => ({ ...prev, phoneNumber: value }));
-  //   }
-  // };
-
   const handleGoToBookAppointment = (patientId: string) => {
     resetPatientForm();
     setBookForApptDept("");
@@ -5245,36 +1190,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setPhoneAutoMatched(false);
     setShowPatientForm(true);
   };
-
-  // const handleSubmitPatient = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (!editingPatientId) return; // this form is edit-only; creation happens via Register
-
-  //   try {
-  //     const res = await fetch(`${apiUrl}/patients/${editingPatientId}`, {
-  //       method: "PUT",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         name: patientForm.name,
-  //         phoneNumber: patientForm.phoneNumber,
-  //         address: patientForm.address,
-  //       }),
-  //     });
-  //     const data = await res.json();
-  //     if (data.success) {
-  //       alert("Patient details updated successfully");
-  //       resetPatientForm();
-  //       fetchData();
-  //     } else {
-  //       alert(data.message || "Failed to update patient");
-  //     }
-  //   } catch (error) {
-  //     alert("Error updating patient");
-  //   }
-  // };
 
   const handleSubmitPatient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -5692,19 +1607,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {currentTab === "doctors" && (
         <div className="tab-pane-container">
-          {/* <div className="card-header-row">
-            <h3>Medical Officers Directory</h3>
-            <button
-              onClick={() =>
-                showDoctorForm ? resetDoctorForm() : handleOpenAddDoctor()
-              }
-              className="btn btn-primary btn-sm"
-            >
-              <Plus size={16} />
-              <span>Add Doctor Account</span>
-            </button>
-          </div> */}
-
           <div className="card-header-row">
             <h3>Medical Officers Directory</h3>
             {!showDoctorForm && (
@@ -6102,221 +2004,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </>
           )}
-
-          {/* {doctors.length === 0 ? (
-            <p className="no-data-text">No doctors registered yet.</p>
-          ) : (
-            <div className="table-responsive fade-in">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Doctor Name</th>
-                    <th>Department</th>
-                    <th>Speciality</th>
-                    <th>Qualifications</th>
-                    <th>Experience</th>
-                    <th>Fee (₹)</th>
-                    <th>Availability</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {doctors.map((doc) => (
-                    <tr key={doc._id}>
-                      <td className="strong-text">
-                        Dr. {doc.user?.name || "N/A"}
-                      </td>
-                      <td>{doc.department}</td>
-                      <td>{doc.specialization}</td>
-                      <td>{doc.qualification}</td>
-                      <td>{doc.experience} Years</td>
-                      <td>₹{doc.consultationFee}</td>
-                      <td>
-                        {doc.availability?.map((av: any, idx: number) => (
-                          <div key={idx} className="availability-slot-badge">
-                            <strong>{av.day}</strong>: {av.slots.join(", ")}
-                          </div>
-                        ))}
-                      </td>
-                      <td>
-                        <div className="table-action-buttons">
-                          <button
-                            onClick={() => handleOpenEditDoctor(doc)}
-                            className="btn btn-secondary btn-sm"
-                            title="Edit Profile"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteDoctor(doc._id)}
-                            className="btn btn-danger btn-sm"
-                            title="Delete Profile"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )} */}
         </div>
       )}
 
-      {/* {currentTab === "patients" && (
-        <div className="tab-pane-container">
-          <div className="card-header-row">
-            <h3>Registered Patients</h3>
-          </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("register", {
-                state: {
-                  from: "admin",
-                },
-              })
-            }
-          >
-            Add Patient
-          </button>
-
-          {showPatientForm && (
-            <form
-              onSubmit={handleSubmitPatient}
-              className="card inline-form-card fade-in"
-            >
-              <h4>Edit Patient Details</h4>
-              <div className="form-grid-three">
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    required
-                    value={patientForm.name}
-                    onChange={(e) =>
-                      setPatientForm({ ...patientForm, name: e.target.value })
-                    }
-                    placeholder="e.g. Jane Doe"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Phone Number</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    required
-                    value={patientForm.phoneNumber}
-                    onChange={(e) =>
-                      setPatientForm({
-                        ...patientForm,
-                        phoneNumber: e.target.value,
-                      })
-                    }
-                    placeholder="9876543210"
-                  />
-                </div>
-                <div className="form-group grid-span-2-col">
-                  <label className="form-label">Place</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    required
-                    value={patientForm.address}
-                    onChange={(e) =>
-                      setPatientForm({
-                        ...patientForm,
-                        address: e.target.value,
-                      })
-                    }
-                    placeholder="Street address, City, ZIP Code"
-                  />
-                </div>
-              </div>
-              <div className="form-actions-row">
-                <button type="submit" className="btn btn-primary">
-                  Save Changes
-                </button>
-                <button
-                  type="button"
-                  onClick={resetPatientForm}
-                  className="btn btn-secondary"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-
-          {patients.length === 0 ? (
-            <p className="no-data-text">
-              No patients registered in the database.
-            </p>
-          ) : (
-            <div className="table-responsive fade-in">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Patient Name</th>
-                    <th>Phone Number</th>
-                    <th>Address</th>
-                    <th>Joined Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {patients.map((pat) => (
-                    <tr key={pat._id}>
-                      <td className="strong-text">{pat.user?.name || "N/A"}</td>
-                      <td>{pat.user?.phoneNumber || "N/A"}</td>
-                      <td>{pat.address}</td>
-                      <td>{new Date(pat.createdAt).toLocaleDateString()}</td>
-                      <td>
-                        <div className="table-action-buttons">
-                          <button
-                            onClick={() => handleOpenEditPatient(pat)}
-                            className="btn btn-secondary btn-sm"
-                            title="Edit Patient"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeletePatient(pat._id)}
-                            className="btn btn-danger btn-sm"
-                            title="Delete Patient"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )} */}
-
       {currentTab === "patients" && (
         <div className="tab-pane-container">
-          {/* <div className="card-header-row">
-            <h3>Registered Patients</h3>
-            <button
-              onClick={() =>
-                showPatientForm ? resetPatientForm() : handleOpenAddPatient()
-              }
-              className="btn btn-primary btn-sm"
-            >
-              <UserPlus size={16} />
-              <span>Add Patient</span>
-            </button>
-          </div> */}
-
           <div className="card-header-row">
             <h3>Registered Patients</h3>
             {!showPatientForm && (
@@ -6416,18 +2108,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Cancel
                 </button>
               </div>
-              {/* <div className="form-actions-row">
-                <button type="submit" className="btn btn-primary">
-                  {editingPatientId ? "Save Changes" : "Create Patient Account"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetPatientForm}
-                  className="btn btn-secondary"
-                >
-                  Cancel
-                </button>
-              </div> */}
             </form>
           )}
 
@@ -6481,160 +2161,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* {currentTab === "patients" && (
-        <div className="tab-pane-container">
-          <div className="card-header-row">
-            <h3>Registered Patients</h3>
-            <button
-              onClick={() =>
-                showPatientForm ? resetPatientForm() : handleOpenAddPatient()
-              }
-              className="btn btn-primary btn-sm"
-            >
-              <UserPlus size={16} />
-              <span>Add Patient</span>
-            </button>
-          </div>
-
-          {showPatientForm && (
-            <form
-              onSubmit={handleSubmitPatient}
-              className="card inline-form-card fade-in"
-            >
-              <h4>
-                {editingPatientId
-                  ? "Edit Patient Details"
-                  : "Register New Patient"}
-              </h4>
-              <div className="form-grid-three">
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    required
-                    value={patientForm.name}
-                    onChange={(e) =>
-                      setPatientForm({ ...patientForm, name: e.target.value })
-                    }
-                    placeholder="e.g. Jane Doe"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Phone Number</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    required
-                    value={patientForm.phoneNumber}
-                    onChange={(e) =>
-                      setPatientForm({
-                        ...patientForm,
-                        phoneNumber: e.target.value,
-                      })
-                    }
-                    placeholder="9876543210"
-                  />
-                </div>
-                <div className="form-group grid-span-2-col">
-                  <label className="form-label">Place</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    required
-                    value={patientForm.address}
-                    onChange={(e) =>
-                      setPatientForm({
-                        ...patientForm,
-                        address: e.target.value,
-                      })
-                    }
-                    placeholder="Street address, City, ZIP Code"
-                  />
-                </div>
-              </div>
-              <div className="form-actions-row">
-                <button type="submit" className="btn btn-primary">
-                  {editingPatientId ? "Save Changes" : "Create Patient Account"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetPatientForm}
-                  className="btn btn-secondary"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-
-          {patients.length === 0 ? (
-            <p className="no-data-text">
-              No patients registered in the database.
-            </p>
-          ) : (
-            <div className="table-responsive fade-in">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Patient Name</th>
-                    <th>Phone Number</th>
-                    <th>Address</th>
-                    <th>Joined Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {patients.map((pat) => (
-                    <tr key={pat._id}>
-                      <td className="strong-text">{pat.user?.name || "N/A"}</td>
-                      <td>{pat.user?.phoneNumber || "N/A"}</td>
-                      <td>{pat.address}</td>
-                      <td>{new Date(pat.createdAt).toLocaleDateString()}</td>
-                      <td>
-                        <div className="table-action-buttons">
-                          <button
-                            onClick={() => handleOpenEditPatient(pat)}
-                            className="btn btn-secondary btn-sm"
-                            title="Edit Patient"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeletePatient(pat._id)}
-                            className="btn btn-danger btn-sm"
-                            title="Delete Patient"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )} */}
-
       {currentTab === "appointments" && (
         <div className="tab-pane-container">
-          {/* <div className="card-header-row">
-            <h3>Patient Appointment Schedule</h3>
-            <button
-              onClick={() =>
-                showBookForApptForm
-                  ? resetBookForApptForm()
-                  : setShowBookForApptForm(true)
-              }
-              className="btn btn-primary btn-sm"
-            >
-              <Plus size={16} />
-              <span>Book Appointment</span>
-            </button>
-          </div> */}
-
           <div className="card-header-row">
             <h3>Patient Appointment Schedule</h3>
             {!showBookForApptForm && (
@@ -6842,14 +2370,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
-          {/* existing reschedule form + appointments table continue below, unchanged */}
-
-          {/* existing edit-appointment form and appointments table stay unchanged below this */}
-
-          {/* {currentTab === "appointments" && (
-        <div className="tab-pane-container">
-          <h3>Patient Appointment Schedule</h3>
-
           {editingApptId && (
             <form
               onSubmit={handleUpdateAppointmentDetails}
@@ -6946,96 +2466,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
               </div>
             </form>
-          )} */}
-
-          {/* {appointments.length === 0 ? (
-            <p className="no-data-text">No appointments booked.</p>
-          ) : (
-            <div className="table-responsive fade-in">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Patient</th>
-                    <th>Doctor</th>
-                    <th>Reason</th>
-                    <th>Date & Slot</th>
-                    <th>Status</th>
-                    <th>Manage</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {appointments.map((appt) => (
-                    <tr key={appt._id}>
-                      <td className="strong-text">
-                        {appt.patient?.user?.name || "N/A"}
-                      </td>
-                      <td>
-                        Dr. {appt.doctor?.user?.name || "N/A"} (
-                        {appt.doctor?.department})
-                      </td>
-                      <td>{appt.reason}</td>
-                      <td>
-                        {new Date(appt.date).toLocaleDateString()} -{" "}
-                        {appt.timeSlot}
-                      </td>
-                      <td>
-                        <span
-                          className={`badge badge-${
-                            appt.status === "confirmed"
-                              ? "success"
-                              : appt.status === "pending"
-                                ? "warning"
-                                : appt.status === "completed"
-                                  ? "info"
-                                  : "danger"
-                          }`}
-                        >
-                          {appt.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="table-action-buttons">
-                          {(appt.status === "pending" ||
-                            appt.status === "confirmed") && (
-                            <button
-                              onClick={() => handleOpenEditAppointment(appt)}
-                              className="btn btn-secondary btn-sm"
-                              title="Reschedule Appointment"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                          )}
-                          {appt.status === "pending" && (
-                            <button
-                              onClick={() =>
-                                handleUpdateAppointment(appt._id, "confirmed")
-                              }
-                              className="btn btn-secondary btn-sm text-success"
-                              title="Confirm Appointment"
-                            >
-                              <Check size={14} />
-                            </button>
-                          )}
-                          {appt.status !== "cancelled" &&
-                            appt.status !== "completed" && (
-                              <button
-                                onClick={() =>
-                                  handleUpdateAppointment(appt._id, "cancelled")
-                                }
-                                className="btn btn-secondary btn-sm text-danger"
-                                title="Cancel Appointment"
-                              >
-                                <X size={14} />
-                              </button>
-                            )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )} */}
+          )}
 
           {viewingAppt && (
             <div className="card inline-form-card fade-in appt-detail-card">
@@ -7058,31 +2489,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               <div className="appt-detail-grid">
                 <div className="appt-detail-item">
-                  <span className="doctor-mobile-label">Patient</span>
+                  <span className="doctor-mobile-label">Patient: </span>
                   <span className="doctor-mobile-value">
                     {viewingAppt.patient?.user?.name || "N/A"}
                   </span>
                 </div>
                 <div className="appt-detail-item">
-                  <span className="doctor-mobile-label">Phone</span>
+                  <span className="doctor-mobile-label">Phone: </span>
                   <span className="doctor-mobile-value">
                     {viewingAppt.patient?.user?.phoneNumber || "N/A"}
                   </span>
                 </div>
                 <div className="appt-detail-item">
-                  <span className="doctor-mobile-label">Doctor</span>
+                  <span className="doctor-mobile-label">Doctor: </span>
                   <span className="doctor-mobile-value">
                     Dr. {viewingAppt.doctor?.user?.name || "N/A"}
                   </span>
                 </div>
                 <div className="appt-detail-item">
-                  <span className="doctor-mobile-label">Department</span>
+                  <span className="doctor-mobile-label">Department: </span>
                   <span className="doctor-mobile-value">
                     {viewingAppt.doctor?.department || "N/A"}
                   </span>
                 </div>
                 <div className="appt-detail-item">
-                  <span className="doctor-mobile-label">Date & Slot</span>
+                  <span className="doctor-mobile-label">Date & Slot: </span>
                   <span className="doctor-mobile-value">
                     {new Date(viewingAppt.date).toLocaleDateString()} -{" "}
                     {viewingAppt.timeSlot}
@@ -7091,19 +2522,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="form-group">
-                <span className="doctor-mobile-label">Reason for Visit</span>
+                <span className="doctor-mobile-label">Reason for Visit: </span>
                 <p className="appt-detail-reason">{viewingAppt.reason}</p>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Notes</label>
-                <textarea
-                  className="form-control"
-                  rows={3}
-                  placeholder="Add any notes for this appointment..."
-                  value={viewApptNotes}
-                  onChange={(e) => setViewApptNotes(e.target.value)}
-                />
               </div>
 
               <div className="form-actions-row">
@@ -7118,17 +2538,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <span>Confirm Appointment</span>
                   </button>
                 )}
+                {/* {viewingAppt.status === "confirmed" && (
+                  <button
+                    onClick={() => handleGenerateToken(viewingAppt)}
+                    className="btn btn-primary"
+                  >
+                    <Ticket size={14} />
+                    <span>Generate Token</span>
+                  </button>
+                )} */}
+
+                {viewingAppt.status === "confirmed" &&
+                  !viewingAppt.tokenNumber && (
+                    <button
+                      onClick={() => handleGenerateToken(viewingAppt)}
+                      className="btn btn-primary"
+                    >
+                      <Ticket size={14} />
+                      <span>Generate Token</span>
+                    </button>
+                  )}
+
+                {viewingAppt.status === "confirmed" &&
+                  viewingAppt.tokenNumber &&
+                  generatedToken && (
+                    <button
+                      onClick={() => handlePrintTokenSlip(generatedToken)}
+                      className="btn btn-primary"
+                    >
+                      <Ticket size={14} />
+                      <span>Print Token Slip</span>
+                    </button>
+                  )}
                 {(viewingAppt.status === "pending" ||
                   viewingAppt.status === "confirmed") && (
                   <button
                     onClick={() => {
-                      handleCloseViewAppointment();
                       handleOpenEditAppointment(viewingAppt);
+                      handleCloseViewAppointment();
+                      setGeneratedToken(null);
                     }}
                     className="btn btn-secondary"
                   >
                     <Edit2 size={14} />
-                    <span>Reschedule</span>
+                    <span>Edit Appointment</span>
                   </button>
                 )}
                 {viewingAppt.status !== "cancelled" &&
@@ -7144,14 +2597,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </button>
                   )}
                 <button
-                  onClick={() =>
-                    handleSaveApptNotes(viewingAppt._id, viewingAppt.status)
-                  }
-                  className="btn btn-secondary"
-                >
-                  Save Notes
-                </button>
-                <button
                   type="button"
                   onClick={handleCloseViewAppointment}
                   className="btn btn-secondary"
@@ -7159,6 +2604,78 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Close
                 </button>
               </div>
+              {generatedToken && (
+                <div className="appt-token-card fade-in">
+                  <div className="appt-token-header">
+                    <span className="appt-token-label">Token No: </span>
+                    <span className="appt-token-number">
+                      {generatedToken.tokenNumber}
+                    </span>
+                  </div>
+                  <div className="appt-token-details">
+                    <div className="appt-detail-item">
+                      <span className="doctor-mobile-label">Patient: </span>
+                      <span className="doctor-mobile-value">
+                        {generatedToken.patientName}
+                      </span>
+                    </div>
+                    <div className="appt-detail-item">
+                      <span className="doctor-mobile-label">Phone: </span>
+                      <span className="doctor-mobile-value">
+                        {generatedToken.phoneNumber}
+                      </span>
+                    </div>
+                    <div className="appt-detail-item">
+                      <span className="doctor-mobile-label">Doctor: </span>
+                      <span className="doctor-mobile-value">
+                        Dr. {generatedToken.doctorName}
+                      </span>
+                    </div>
+                    <div className="appt-detail-item">
+                      <span className="doctor-mobile-label">Department: </span>
+                      <span className="doctor-mobile-value">
+                        {generatedToken.department}
+                      </span>
+                    </div>
+                    <div className="appt-detail-item">
+                      <span className="doctor-mobile-label">Slot: </span>
+                      <span className="doctor-mobile-value">
+                        {generatedToken.timeSlot}
+                      </span>
+                    </div>
+                    <div className="appt-detail-item">
+                      <span className="doctor-mobile-label">
+                        Generated At:{" "}
+                      </span>
+                      <span className="doctor-mobile-value">
+                        {generatedToken.generatedAt}
+                      </span>
+                    </div>
+                  </div>
+                  {viewingAppt.status === "confirmed" &&
+                    !viewingAppt.tokenNumber && (
+                      <button
+                        onClick={() => handleGenerateToken(viewingAppt)}
+                        className="btn btn-primary"
+                      >
+                        <Ticket size={14} />
+                        <span>Generate Token</span>
+                      </button>
+                    )}
+
+                  {viewingAppt.status === "confirmed" &&
+                    viewingAppt.tokenNumber &&
+                    generatedToken && (
+                      <button
+                        onClick={() => handlePrintTokenSlip(generatedToken)}
+                        className="btn btn-primary"
+                      >
+                        <Ticket size={14} />
+                        <span>Print Token Slip</span>
+                      </button>
+                    )}
+                </div>
+              )}
             </div>
           )}
 
