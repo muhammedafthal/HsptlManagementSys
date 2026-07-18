@@ -106,40 +106,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [viewingApptId, setViewingApptId] = useState<string | null>(null);
   const [viewApptNotes, setViewApptNotes] = useState("");
 
-  // const handleOpenViewAppointment = (appt: any) => {
-  //   setViewApptNotes(appt.notes || "");
-  //   setViewingApptId(appt._id);
-  // };
-
   const handleOpenViewAppointment = (appt: any) => {
     setViewApptNotes(appt.notes || "");
     setViewingApptId(appt._id);
-
-    if (appt.tokenNumber) {
-      setGeneratedToken({
-        tokenNumber: appt.tokenNumber,
-        patientName: appt.patient?.user?.name || "N/A",
-        phoneNumber: appt.patient?.user?.phoneNumber || "N/A",
-        doctorName: appt.doctor?.user?.name || "N/A",
-        department: appt.doctor?.department || "N/A",
-        date: new Date(appt.date).toLocaleDateString(),
-        timeSlot: appt.timeSlot,
-        generatedAt: appt.tokenGeneratedAt || "",
-      });
-    } else {
-      setGeneratedToken(null);
-    }
   };
-
-  // const handleCloseViewAppointment = () => {
-  //   setViewingApptId(null);
-  //   setViewApptNotes("");
-  // };
 
   const handleCloseViewAppointment = () => {
     setViewingApptId(null);
     setViewApptNotes("");
-    setGeneratedToken(null);
   };
 
   const handleSaveApptNotes = async (apptId: string, status: string) => {
@@ -163,55 +137,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  const [generatedToken, setGeneratedToken] = useState(null);
-
-  const handleGenerateToken = (appt: any) => {
-    // ⚠️ MOCK LOGIC — replace with a real backend call once ready, e.g.:
-    // const res = await fetch(`${apiUrl}/appointments/${appt._id}/generate-token`, {
-    //   method: "POST",
-    //   headers: { Authorization: `Bearer ${token}` },
-    // });
-    // const data = await res.json();
-    // This MUST be an atomic increment server-side (findOneAndUpdate + $inc on a
-    // per-doctor-per-day counter) — two admins generating tokens at the same
-    // moment must never get the same number. localStorage can't guarantee that,
-    // it's only safe as a single-admin placeholder.
-
-    const today = new Date().toDateString();
-    const storageKey = `tokenCounter-${appt.doctor?._id}-${today}`;
-    const lastCount = parseInt(localStorage.getItem(storageKey) || "0", 10);
-    const newCount = lastCount + 1;
-    localStorage.setItem(storageKey, newCount);
-
-    const tokenData = {
-      tokenNumber: newCount,
-      patientName: appt.patient?.user?.name || "N/A",
-      phoneNumber: appt.patient?.user?.phoneNumber || "N/A",
-      doctorName: appt.doctor?.user?.name || "N/A",
-      department: appt.doctor?.department || "N/A",
-      date: new Date(appt.date).toLocaleDateString(),
-      timeSlot: appt.timeSlot,
-      generatedAt: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setGeneratedToken(tokenData);
-
-    // Persist onto the appointment in local state so re-opening this
-    // appointment later shows the same token instead of generating a new one.
-    setAppointments((prev) =>
-      prev.map((a) =>
-        a._id === appt._id
-          ? {
-              ...a,
-              tokenNumber: newCount,
-              tokenGeneratedAt: tokenData.generatedAt,
-            }
-          : a,
-      ),
-    );
+  const handleGenerateToken = async (appt: any) => {
+    try {
+      const res = await fetch(
+        `${apiUrl}/appointments/${appt._id}/generate-token`,
+        {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      const data = await res.json();
+      if (data.success) {
+        fetchData(); // refreshes `appointments`, which updates `viewingAppt` automatically
+      } else {
+        alert(data.message || "Failed to generate token");
+      }
+    } catch (err) {
+      alert("Error generating token");
+    }
   };
 
   const handlePrintTokenSlip = (tokenData: any) => {
@@ -240,7 +183,7 @@ body{
     font-family:Arial,Helvetica,sans-serif;
     background:#fff;
     color:#000;
-    width:300px;
+    width:350px;
     margin:auto;
     padding:12px;
 }
@@ -318,29 +261,33 @@ body{
 
 /* DETAILS */
 
-table{
-
-    width:100%;
-    border-collapse:collapse;
-    font-size:13px;
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: fixed;
 }
 
-table td{
-
-    border-top:1px solid #ddd;
-    padding:7px 12px;
+table td {
+    border-top: 1px solid #ddd;
+    padding: 7px 12px;
+    vertical-align: top;
 }
 
-table td:first-child{
-
-    color:#555;
-    width:35%;
+table td:first-child {
+    color: #555;
+    width: 38%;
+    font-weight: 600;
 }
 
-table td:last-child{
+table td:last-child {
+    width: 62%;
+    text-align: right;
+    font-weight: bold;
 
-    text-align:right;
-    font-weight:bold;
+    /* Prevent long text from breaking the layout */
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 /* FOOTER */
@@ -425,6 +372,11 @@ OPD TOKEN
 <table>
 
 <tr>
+<td>Patient Id</td>
+<td>${tokenData.patientId}</td>
+</tr>
+
+<tr>
 <td>Patient</td>
 <td>${tokenData.patientName}</td>
 </tr>
@@ -483,6 +435,18 @@ Keep this slip for consultation.
       printWindow.close();
     }, 250);
   };
+
+  const buildTokenSlipData = (appt: any) => ({
+    tokenNumber: appt.tokenNumber,
+    patientId: appt.patient?.user?._id || "N/A",
+    patientName: appt.patient?.user?.name || "N/A",
+    phoneNumber: appt.patient?.user?.phoneNumber || "N/A",
+    doctorName: appt.doctor?.user?.name || "N/A",
+    department: appt.doctor?.department || "N/A",
+    date: new Date(appt.date).toLocaleDateString(),
+    timeSlot: appt.timeSlot,
+    generatedAt: appt.tokenGeneratedAt || "",
+  });
 
   const [showBookForApptForm, setShowBookForApptForm] = useState(false);
   const [bookForApptDept, setBookForApptDept] = useState("");
@@ -2161,15 +2125,6 @@ Keep this slip for consultation.
                     <span>Confirm Appointment</span>
                   </button>
                 )}
-                {/* {viewingAppt.status === "confirmed" && (
-                  <button
-                    onClick={() => handleGenerateToken(viewingAppt)}
-                    className="btn btn-primary"
-                  >
-                    <Ticket size={14} />
-                    <span>Generate Token</span>
-                  </button>
-                )} */}
 
                 {viewingAppt.status === "confirmed" &&
                   !viewingAppt.tokenNumber && (
@@ -2183,23 +2138,24 @@ Keep this slip for consultation.
                   )}
 
                 {viewingAppt.status === "confirmed" &&
-                  viewingAppt.tokenNumber &&
-                  generatedToken && (
+                  viewingAppt.tokenNumber && (
                     <button
-                      onClick={() => handlePrintTokenSlip(generatedToken)}
+                      onClick={() =>
+                        handlePrintTokenSlip(buildTokenSlipData(viewingAppt))
+                      }
                       className="btn btn-primary"
                     >
                       <Ticket size={14} />
                       <span>Print Token Slip</span>
                     </button>
                   )}
+
                 {(viewingAppt.status === "pending" ||
                   viewingAppt.status === "confirmed") && (
                   <button
                     onClick={() => {
                       handleOpenEditAppointment(viewingAppt);
                       handleCloseViewAppointment();
-                      setGeneratedToken(null);
                     }}
                     className="btn btn-secondary"
                   >
@@ -2207,6 +2163,7 @@ Keep this slip for consultation.
                     <span>Edit Appointment</span>
                   </button>
                 )}
+
                 {viewingAppt.status !== "cancelled" &&
                   viewingAppt.status !== "completed" && (
                     <button
@@ -2219,6 +2176,7 @@ Keep this slip for consultation.
                       <span>Cancel Appointment</span>
                     </button>
                   )}
+
                 <button
                   type="button"
                   onClick={handleCloseViewAppointment}
@@ -2227,43 +2185,44 @@ Keep this slip for consultation.
                   Close
                 </button>
               </div>
-              {generatedToken && (
+
+              {viewingAppt.tokenNumber && (
                 <div className="appt-token-card fade-in">
                   <div className="appt-token-header">
                     <span className="appt-token-label">Token No: </span>
                     <span className="appt-token-number">
-                      {generatedToken.tokenNumber}
+                      {viewingAppt.tokenNumber}
                     </span>
                   </div>
                   <div className="appt-token-details">
                     <div className="appt-detail-item">
                       <span className="doctor-mobile-label">Patient: </span>
                       <span className="doctor-mobile-value">
-                        {generatedToken.patientName}
+                        {viewingAppt.patient?.user?.name || "N/A"}
                       </span>
                     </div>
                     <div className="appt-detail-item">
                       <span className="doctor-mobile-label">Phone: </span>
                       <span className="doctor-mobile-value">
-                        {generatedToken.phoneNumber}
+                        {viewingAppt.patient?.user?.phoneNumber || "N/A"}
                       </span>
                     </div>
                     <div className="appt-detail-item">
                       <span className="doctor-mobile-label">Doctor: </span>
                       <span className="doctor-mobile-value">
-                        Dr. {generatedToken.doctorName}
+                        Dr. {viewingAppt.doctor?.user?.name || "N/A"}
                       </span>
                     </div>
                     <div className="appt-detail-item">
                       <span className="doctor-mobile-label">Department: </span>
                       <span className="doctor-mobile-value">
-                        {generatedToken.department}
+                        {viewingAppt.doctor?.department || "N/A"}
                       </span>
                     </div>
                     <div className="appt-detail-item">
                       <span className="doctor-mobile-label">Slot: </span>
                       <span className="doctor-mobile-value">
-                        {generatedToken.timeSlot}
+                        {viewingAppt.timeSlot}
                       </span>
                     </div>
                     <div className="appt-detail-item">
@@ -2271,32 +2230,10 @@ Keep this slip for consultation.
                         Generated At:{" "}
                       </span>
                       <span className="doctor-mobile-value">
-                        {generatedToken.generatedAt}
+                        {viewingAppt.tokenGeneratedAt || "N/A"}
                       </span>
                     </div>
                   </div>
-                  {viewingAppt.status === "confirmed" &&
-                    !viewingAppt.tokenNumber && (
-                      <button
-                        onClick={() => handleGenerateToken(viewingAppt)}
-                        className="btn btn-primary"
-                      >
-                        <Ticket size={14} />
-                        <span>Generate Token</span>
-                      </button>
-                    )}
-
-                  {/* {viewingAppt.status === "confirmed" &&
-                    viewingAppt.tokenNumber &&
-                    generatedToken && (
-                      <button
-                        onClick={() => handlePrintTokenSlip(generatedToken)}
-                        className="btn btn-primary"
-                      >
-                        <Ticket size={14} />
-                        <span>Print Token Slip</span>
-                      </button>
-                    )} */}
                 </div>
               )}
             </div>

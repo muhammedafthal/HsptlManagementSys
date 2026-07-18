@@ -208,68 +208,6 @@ export const updateAppointmentStatus = async (
   }
 };
 
-// export const generateToken = async (
-//   req: AuthRequest,
-//   res: Response,
-// ): Promise<void> => {
-//   try {
-//     const appointment = await Appointment.findById(req.params.id);
-//     if (!appointment) {
-//       res.status(404).json({
-//         success: false,
-//         message: "Didn't found any appointment!",
-//       });
-//       return;
-//     }
-
-//     const isAdmin = req.user.role === "admin";
-//     if (!isAdmin) {
-//       res.status(400).json({
-//         success: false,
-//         message: "Only admin can generate token!",
-//       });
-//       return;
-//     }
-
-//     const todaysDateString = new Date().toDateString();
-//     const apptDateString = new Date(appointment.date).toDateString();
-
-//     if (todaysDateString !== apptDateString) {
-//       res.status(404).json({
-//         success: false,
-//         message: "No appointment for today!",
-//       });
-//       return;
-//     }
-
-//     if (
-//       appointment.status === "cancelled" ||
-//       appointment.status === "completed" ||
-//       appointment.status === "pending"
-//     ) {
-//       res.status(400).json({
-//         success: false,
-//         message: `Cannot generate token that is already ${appointment.status}`,
-//       });
-//     }
-
-//   // Which appointments?
-//   // Today's?
-//   // All doctors?
-//   // Same doctor?
-//   // Already generated tokens?
-//   // Highest token?
-
-//     res.status(200).json({
-//       success: true,
-//       message: "No error yet!",
-//     });
-//     console.log("S:", todaysDateString, "T:", apptDateString);
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: (error as Error).message });
-//   }
-// };
-
 export const generateToken = async (
   req: AuthRequest,
   res: Response,
@@ -335,7 +273,7 @@ export const generateToken = async (
     if (appointment.status !== "confirmed") {
       res.status(400).json({
         success: false,
-        message: `Cannot generate token for an appointment that is ${appointment.status}`,
+        message: `Cannot generate token were the appointment is not confirmed!`,
       });
       return;
     }
