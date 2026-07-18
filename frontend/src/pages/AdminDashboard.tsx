@@ -165,30 +165,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [generatedToken, setGeneratedToken] = useState(null);
 
-  // const handleGenerateToken = (appt) => {
-  //   // Mock logic — replace with API call once backend is ready.
-  //   // e.g. const res = await api.post(`/appointments/${appt._id}/generate-token`);
-
-  //   const today = new Date().toDateString();
-  //   const storageKey = `tokenCounter-${appt.doctor?._id}-${today}`;
-  //   const lastCount = parseInt(localStorage.getItem(storageKey) || "0", 10);
-  //   const newCount = lastCount + 1;
-  //   localStorage.setItem(storageKey, newCount);
-
-  //   setGeneratedToken({
-  //     tokenNumber: newCount,
-  //     patientName: appt.patient?.user?.name || "N/A",
-  //     phoneNumber: appt.patient?.user?.phoneNumber || "N/A",
-  //     doctorName: appt.doctor?.user?.name || "N/A",
-  //     department: appt.doctor?.department || "N/A",
-  //     timeSlot: appt.timeSlot,
-  //     generatedAt: new Date().toLocaleTimeString([], {
-  //       hour: "2-digit",
-  //       minute: "2-digit",
-  //     }),
-  //   });
-  // };
-
   const handleGenerateToken = (appt: any) => {
     // ⚠️ MOCK LOGIC — replace with a real backend call once ready, e.g.:
     // const res = await fetch(`${apiUrl}/appointments/${appt._id}/generate-token`, {
@@ -244,355 +220,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       alert("Please allow pop-ups to print the token slip");
       return;
     }
-
-    //   printWindow.document.write(`
-    //   <!DOCTYPE html>
-    //   <html>
-    //     <head>
-    //       <title>Token Slip</title>
-    //       <style>
-    //         * { box-sizing: border-box; }
-    //         body {
-    //           font-family: 'Segoe UI', Arial, sans-serif;
-    //           padding: 20px;
-    //           color: #111;
-    //         }
-    //         .slip-header {
-    //           text-align: center;
-    //           border-bottom: 2px dashed #333;
-    //           padding-bottom: 12px;
-    //           margin-bottom: 16px;
-    //         }
-    //         .slip-header h2 { margin: 0 0 4px; font-size: 18px; }
-    //         .slip-header p { margin: 0; font-size: 12px; color: #555; }
-    //         .token-number-block {
-    //           text-align: center;
-    //           margin: 16px 0 20px;
-    //         }
-    //         .token-number-block .label {
-    //           font-size: 12px;
-    //           color: #555;
-    //           text-transform: uppercase;
-    //           letter-spacing: 1px;
-    //         }
-    //         .token-number-block .number {
-    //           font-size: 56px;
-    //           font-weight: 800;
-    //           line-height: 1.1;
-    //         }
-    //         .slip-details {
-    //           font-size: 13px;
-    //           border-top: 1px dashed #333;
-    //           padding-top: 12px;
-    //         }
-    //         .slip-details div {
-    //           display: flex;
-    //           justify-content: space-between;
-    //           margin-bottom: 6px;
-    //         }
-    //         .slip-details span:first-child { color: #555; }
-    //         .slip-details span:last-child { font-weight: 600; text-align: right; }
-    //         .slip-footer {
-    //           text-align: center;
-    //           font-size: 11px;
-    //           color: #888;
-    //           margin-top: 16px;
-    //           border-top: 2px dashed #333;
-    //           padding-top: 10px;
-    //         }
-    //       </style>
-    //     </head>
-    //     <body>
-    //       <div class="slip-header">
-    //         <h2>City Hospital</h2>
-    //         <p>OPD Token Slip</p>
-    //       </div>
-
-    //       <div class="token-number-block">
-    //         <div class="label">Token No.</div>
-    //         <div class="number">${tokenData.tokenNumber}</div>
-    //       </div>
-
-    //       <div class="slip-details">
-    //         <div><span>Patient</span><span>${tokenData.patientName}</span></div>
-    //         <div><span>Phone</span><span>${tokenData.phoneNumber}</span></div>
-    //         <div><span>Doctor</span><span>Dr. ${tokenData.doctorName}</span></div>
-    //         <div><span>Department</span><span>${tokenData.department}</span></div>
-    //         <div><span>Date</span><span>${tokenData.date}</span></div>
-    //         <div><span>Slot</span><span>${tokenData.timeSlot}</span></div>
-    //         <div><span>Issued At</span><span>${tokenData.generatedAt}</span></div>
-    //       </div>
-
-    //       <div class="slip-footer">
-    //         Please wait for your token number to be called.<br/>
-    //         Keep this slip until your consultation.
-    //       </div>
-    //     </body>
-    //   </html>
-    // `);
-
-    //     printWindow.document.write(`
-    //   <!DOCTYPE html>
-    // <html>
-    // <head>
-    // <meta charset="UTF-8">
-    // <title>OPD Token</title>
-
-    // <style>
-
-    // *{
-    //     margin:0;
-    //     padding:0;
-    //     box-sizing:border-box;
-    // }
-
-    // body{
-    //     font-family:Arial,Helvetica,sans-serif;
-    //     background:#fff;
-    //     color:#000;
-    //     width:300px;
-    //     margin:auto;
-    // }
-
-    // .ticket{
-
-    //     border:2px solid #000;
-    //     padding:14px;
-    // }
-
-    // /* ---------- Header ---------- */
-
-    // .header{
-    //     text-align:center;
-    //     border-bottom:2px dashed #777;
-    //     padding-bottom:12px;
-    //     margin-bottom:12px;
-    // }
-
-    // .logo{
-    //     width:58px;
-    //     height:58px;
-    //     margin:auto;
-    //     border:2px solid #0284c7;
-    //     border-radius:50%;
-    //     display:flex;
-    //     justify-content:center;
-    //     align-items:center;
-    //     margin-bottom:8px;
-    // }
-
-    // .logo svg{
-    //     color:#0284c7;
-    // }
-
-    // .hospital-name{
-    //     font-size:22px;
-    //     font-weight:700;
-    // }
-
-    // .hospital-sub{
-    //     font-size:11px;
-    //     color:#555;
-    //     margin-top:2px;
-    // }
-
-    // .slip-title{
-
-    //     margin-top:12px;
-    //     font-size:15px;
-    //     font-weight:bold;
-    //     letter-spacing:2px;
-    // }
-
-    // /* ---------- Token ---------- */
-
-    // .token-box{
-
-    //     border:3px solid #000;
-    //     text-align:center;
-    //     padding:12px;
-    //     margin:18px 0;
-    // }
-
-    // .token-label{
-
-    //     font-size:13px;
-    //     text-transform:uppercase;
-    //     letter-spacing:1px;
-    //     color:#444;
-    // }
-
-    // .token-number{
-
-    //     font-size:68px;
-    //     font-weight:900;
-    //     line-height:1;
-    //     margin-top:4px;
-    // }
-
-    // /* ---------- Details ---------- */
-
-    // .details{
-    //     width:100%;
-    //     border-collapse:collapse;
-    //     font-size:13px;
-    // }
-
-    // .details td{
-    //     padding:6px 0;
-    //     vertical-align:top;
-    // }
-
-    // .details td:first-child{
-
-    //     color:#555;
-    //     width:90px;
-    // }
-
-    // .details td:last-child{
-    //     text-align:right;
-    //     font-weight:600;
-    // }
-
-    // /* ---------- Footer ---------- */
-
-    // .footer{
-
-    //     margin-top:16px;
-    //     border-top:2px dashed #777;
-    //     padding-top:12px;
-    //     text-align:center;
-    //     font-size:11px;
-    //     color:#555;
-    // }
-
-    // .notice{
-
-    //     margin-top:8px;
-    //     font-weight:bold;
-    //     color:#000;
-    // }
-
-    // .powered{
-
-    //     margin-top:10px;
-    //     font-size:10px;
-    //     color:#888;
-    // }
-
-    // </style>
-
-    // </head>
-
-    // <body>
-
-    // <div class="ticket">
-
-    //     <div class="header">
-
-    //         <!-- Lucide Activity Icon -->
-    //         <div class="logo">
-
-    //             <svg xmlns="http://www.w3.org/2000/svg"
-    //                  width="28"
-    //                  height="28"
-    //                  viewBox="0 0 24 24"
-    //                  fill="none"
-    //                  stroke="#0284c7"
-    //                  stroke-width="2.5"
-    //                  stroke-linecap="round"
-    //                  stroke-linejoin="round">
-
-    //                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-
-    //             </svg>
-
-    //         </div>
-
-    //         <div class="hospital-name">
-    //             MediCare Plus
-    //         </div>
-
-    //         <div class="hospital-sub">
-    //             Hospital Management System
-    //         </div>
-
-    //         <div class="slip-title">
-    //             OPD TOKEN
-    //         </div>
-
-    //     </div>
-
-    //     <div class="token-box">
-
-    //         <div class="token-label">
-    //             Token Number
-    //         </div>
-
-    //         <div class="token-number">
-    //             ${tokenData.tokenNumber}
-    //         </div>
-
-    //     </div>
-
-    //     <table class="details">
-
-    //         <tr>
-    //             <td>Patient</td>
-    //             <td>${tokenData.patientName}</td>
-    //         </tr>
-
-    //         <tr>
-    //             <td>Phone</td>
-    //             <td>${tokenData.phoneNumber}</td>
-    //         </tr>
-
-    //         <tr>
-    //             <td>Doctor</td>
-    //             <td>Dr. ${tokenData.doctorName}</td>
-    //         </tr>
-
-    //         <tr>
-    //             <td>Department</td>
-    //             <td>${tokenData.department}</td>
-    //         </tr>
-
-    //         <tr>
-    //             <td>Date</td>
-    //             <td>${tokenData.date}</td>
-    //         </tr>
-
-    //         <tr>
-    //             <td>Time Slot</td>
-    //             <td>${tokenData.timeSlot}</td>
-    //         </tr>
-
-    //         <tr>
-    //             <td>Issued</td>
-    //             <td>${tokenData.generatedAt}</td>
-    //         </tr>
-
-    //     </table>
-
-    //     <div class="footer">
-
-    //         Please wait until your token number is displayed or announced.
-
-    //         <div class="notice">
-    //             Keep this slip until consultation is completed.
-    //         </div>
-
-    //         <div class="powered">
-    //             Thank you for choosing MediCare Plus
-    //         </div>
-
-    //     </div>
-
-    // </div>
-
-    // </body>
-    // </html>
-    // `);
 
     printWindow.document.write(`
 <!DOCTYPE html>
@@ -670,6 +297,7 @@ body{
 
     margin:14px;
     border:2px solid #000;
+    border-radius: 8px;
     text-align:center;
     padding:10px;
 }
@@ -817,18 +445,13 @@ OPD TOKEN
 </tr>
 
 <tr>
-<td>Date</td>
+<td>Appointment Date</td>
 <td>${tokenData.date}</td>
 </tr>
 
 <tr>
 <td>Time</td>
 <td>${tokenData.timeSlot}</td>
-</tr>
-
-<tr>
-<td>Issued</td>
-<td>${tokenData.generatedAt}</td>
 </tr>
 
 </table>
@@ -2663,7 +2286,7 @@ Keep this slip for consultation.
                       </button>
                     )}
 
-                  {viewingAppt.status === "confirmed" &&
+                  {/* {viewingAppt.status === "confirmed" &&
                     viewingAppt.tokenNumber &&
                     generatedToken && (
                       <button
@@ -2673,13 +2296,15 @@ Keep this slip for consultation.
                         <Ticket size={14} />
                         <span>Print Token Slip</span>
                       </button>
-                    )}
+                    )} */}
                 </div>
               )}
             </div>
           )}
 
-          {appointments.length === 0 ? (
+          {showBookForApptForm ||
+          editingApptId ||
+          viewingApptId ? null : appointments.length === 0 ? (
             <p className="no-data-text">No appointments booked.</p>
           ) : (
             <div className="table-responsive fade-in">

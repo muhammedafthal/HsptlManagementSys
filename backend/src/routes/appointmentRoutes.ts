@@ -4,6 +4,7 @@ import {
   getAppointments,
   getAppointment,
   updateAppointmentStatus,
+  generateToken,
   editAppointment,
   cancelAppointment,
 } from "../controllers/appointmentController";
@@ -24,6 +25,7 @@ router
   .route("/:id/status")
   .put(authorize("admin", "doctor"), updateAppointmentStatus);
 
+router.route("/:id/generate-token").put(generateToken);
 router.route("/:id/edit").put(editAppointment);
 
 router.route("/:id/cancel").put(cancelAppointment);

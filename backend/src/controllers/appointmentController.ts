@@ -3,6 +3,12 @@ import Appointment from "../models/Appointment";
 import Patient from "../models/Patient";
 import Doctor from "../models/Doctor";
 import { AuthRequest } from "../middleware/auth";
+import TokenCounter from "../models/TokenCounter";
+
+// Consistent "YYYY-MM-DD" key used by both Appointment.tokenDate and TokenCounter.date
+const toDateKey = (d: Date | string): string => {
+  return new Date(d).toISOString().split("T")[0];
+};
 
 // @desc    Book a new appointment
 // @route   POST /api/appointments
@@ -197,6 +203,175 @@ export const updateAppointmentStatus = async (
     await appointment.save();
 
     res.status(200).json({ success: true, data: appointment });
+  } catch (error) {
+    res.status(500).json({ success: false, message: (error as Error).message });
+  }
+};
+
+// export const generateToken = async (
+//   req: AuthRequest,
+//   res: Response,
+// ): Promise<void> => {
+//   try {
+//     const appointment = await Appointment.findById(req.params.id);
+//     if (!appointment) {
+//       res.status(404).json({
+//         success: false,
+//         message: "Didn't found any appointment!",
+//       });
+//       return;
+//     }
+
+//     const isAdmin = req.user.role === "admin";
+//     if (!isAdmin) {
+//       res.status(400).json({
+//         success: false,
+//         message: "Only admin can generate token!",
+//       });
+//       return;
+//     }
+
+//     const todaysDateString = new Date().toDateString();
+//     const apptDateString = new Date(appointment.date).toDateString();
+
+//     if (todaysDateString !== apptDateString) {
+//       res.status(404).json({
+//         success: false,
+//         message: "No appointment for today!",
+//       });
+//       return;
+//     }
+
+//     if (
+//       appointment.status === "cancelled" ||
+//       appointment.status === "completed" ||
+//       appointment.status === "pending"
+//     ) {
+//       res.status(400).json({
+//         success: false,
+//         message: `Cannot generate token that is already ${appointment.status}`,
+//       });
+//     }
+
+//   // Which appointments?
+//   // Today's?
+//   // All doctors?
+//   // Same doctor?
+//   // Already generated tokens?
+//   // Highest token?
+
+//     res.status(200).json({
+//       success: true,
+//       message: "No error yet!",
+//     });
+//     console.log("S:", todaysDateString, "T:", apptDateString);
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: (error as Error).message });
+//   }
+// };
+
+export const generateToken = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const appointment = await Appointment.findById(req.params.id)
+      .populate({
+        path: "patient",
+        populate: { path: "user", select: "name phoneNumber" },
+      })
+      .populate({
+        path: "doctor",
+        populate: { path: "user", select: "name" },
+      });
+
+    if (!appointment) {
+      res.status(404).json({
+        success: false,
+        message: "Appointment not found",
+      });
+      return;
+    }
+
+    // Authorization: admin only
+    const isAdmin = req.user.role === "admin";
+    if (!isAdmin) {
+      res.status(403).json({
+        success: false,
+        message: "Only admin can generate token",
+      });
+      return;
+    }
+
+    const todayKey = toDateKey(new Date());
+    const apptDateKey = toDateKey(appointment.date);
+
+    // --- Expiry handling ---
+    if (apptDateKey < todayKey) {
+      // Appointment date already passed
+      if (appointment.status === "pending") {
+        appointment.status = "cancelled";
+        await appointment.save();
+      }
+      res.status(400).json({
+        success: false,
+        message:
+          appointment.status === "cancelled"
+            ? "This appointment date has expired and has been cancelled"
+            : "This appointment date has already expired",
+      });
+      return;
+    }
+
+    if (apptDateKey > todayKey) {
+      res.status(400).json({
+        success: false,
+        message: "Cannot generate token for a future appointment",
+      });
+      return;
+    }
+
+    // --- Status check: only confirmed, same-day appointments qualify ---
+    if (appointment.status !== "confirmed") {
+      res.status(400).json({
+        success: false,
+        message: `Cannot generate token for an appointment that is ${appointment.status}`,
+      });
+      return;
+    }
+
+    // --- Idempotency: if a token already exists for TODAY, just return it ---
+    if (appointment.tokenNumber && appointment.tokenDate === todayKey) {
+      res.status(200).json({
+        success: true,
+        message: "Token already generated for today",
+        data: appointment,
+      });
+      return;
+    }
+
+    // --- Atomic, race-safe increment: next token for this doctor, today ---
+    const counter = await TokenCounter.findOneAndUpdate(
+      { doctor: appointment.doctor, date: todayKey },
+      { $inc: { lastToken: 1 } },
+      { new: true, upsert: true },
+    );
+
+    // --- Save the token onto the appointment ---
+    appointment.tokenNumber = counter.lastToken;
+    appointment.tokenDate = todayKey;
+    appointment.tokenGeneratedAt = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    await appointment.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Token generated successfully",
+      data: appointment,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: (error as Error).message });
   }

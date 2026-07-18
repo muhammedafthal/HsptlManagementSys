@@ -43,7 +43,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigateToRegister }) => {
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label className="form-label" htmlFor="email">
-              Email Address
+              Full Name
             </label>
             <div className="input-with-icon">
               <Mail size={18} className="input-icon" />
@@ -62,7 +62,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigateToRegister }) => {
 
           <div className="form-group">
             <label className="form-label" htmlFor="password">
-              Password
+              Phone Number
             </label>
             <div className="input-with-icon">
               <Lock size={18} className="input-icon" />

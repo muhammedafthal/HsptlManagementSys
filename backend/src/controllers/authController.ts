@@ -101,7 +101,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (!user.phoneNumber === phoneNumber) {
+    if (user.phoneNumber !== phoneNumber) {
       res
         .status(401)
         .json({ success: false, message: "Invalid credentialsss" });
