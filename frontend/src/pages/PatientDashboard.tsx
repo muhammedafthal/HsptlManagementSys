@@ -481,7 +481,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
             <div className="card grid-span-2">
               <h3>Upcoming Consultation Bookings</h3>
               {appointments.filter(
-                (a) => a.status === "pending" || a.status === "confirmed",
+                (a) => a.status === "scheduled" || a.status === "confirmed",
               ).length === 0 ? (
                 <div className="no-bookings-placeholder">
                   <p>You have no scheduled bookings.</p>
@@ -515,7 +515,8 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                       {appointments
                         .filter(
                           (a) =>
-                            a.status === "pending" || a.status === "confirmed",
+                            a.status === "scheduled" ||
+                            a.status === "confirmed",
                         )
                         .slice(0, 5)
                         .map((appt) => (
@@ -693,7 +694,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                           className={`badge badge-${
                             appt.status === "confirmed"
                               ? "success"
-                              : appt.status === "pending"
+                              : appt.status === "scheduled"
                                 ? "warning"
                                 : appt.status === "completed"
                                   ? "info"
@@ -705,7 +706,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                       </td>
                       <td>{appt.notes || "No notes added yet."}</td>
                       <td>
-                        {appt.status === "pending" && (
+                        {appt.status === "scheduled" && (
                           <div className="table-action-buttons">
                             <button
                               onClick={() => handleOpenEditAppointment(appt)}

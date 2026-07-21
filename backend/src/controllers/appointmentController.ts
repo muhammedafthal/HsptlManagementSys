@@ -56,7 +56,7 @@ export const bookAppointment = async (
       date,
       timeSlot,
       reason,
-      status: "pending",
+      status: "booked",
     });
 
     res.status(201).json({ success: true, data: appointment });
@@ -102,6 +102,34 @@ export const getAppointments = async (
         populate: { path: "user", select: "name email phoneNumber" },
       })
       .sort({ date: 1, timeSlot: 1 });
+
+    // if (!appointments) {
+    //   res.status(404).json({
+    //     success: false,
+    //     message: "Appointment not found",
+    //   });
+    //   return;
+    // }
+
+    if (appointments.length === 0) {
+      res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+      });
+      return;
+    }
+
+    const todayKey = toDateKey(new Date());
+
+    for (const appointment of appointments) {
+      const apptDateKey = toDateKey(appointment.date);
+
+      if (apptDateKey < todayKey && appointment.status === "booked") {
+        appointment.status = "cancelled";
+        await appointment.save();
+      }
+    }
 
     res
       .status(200)
@@ -247,7 +275,7 @@ export const generateToken = async (
     // --- Expiry handling ---
     if (apptDateKey < todayKey) {
       // Appointment date already passed
-      if (appointment.status === "pending") {
+      if (appointment.status === "booked") {
         appointment.status = "cancelled";
         await appointment.save();
       }
@@ -375,7 +403,7 @@ export const editAppointment = async (
     // If the visit was already confirmed, rescheduling should send it back
     // for the doctor/admin to re-confirm the new date/slot.
     if (appointment.status === "confirmed") {
-      appointment.status = "pending";
+      appointment.status = "booked";
     }
 
     await appointment.save();

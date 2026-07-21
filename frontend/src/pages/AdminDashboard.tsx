@@ -183,7 +183,7 @@ body{
     font-family:Arial,Helvetica,sans-serif;
     background:#fff;
     color:#000;
-    width:350px;
+    width:390px;
     margin:auto;
     padding:12px;
 }
@@ -449,6 +449,10 @@ Keep this slip for consultation.
   });
 
   const [showBookForApptForm, setShowBookForApptForm] = useState(false);
+
+  const [appointmentFilter, setAppointmentFilter] = useState("all");
+  const [searchPhone, setSearchPhone] = useState("");
+
   const [bookForApptDept, setBookForApptDept] = useState("");
   const [bookForApptForm, setBookForApptForm] = useState({
     patientId: "",
@@ -895,7 +899,9 @@ Keep this slip for consultation.
       });
       const data = await res.json();
       if (data.success) {
-        alert("Appointment booked successfully for the patient");
+        alert(
+          `✅ Appointment Booked Successfully, Kindly arrive at the hospital at least 15–30 minutes before your scheduled appointment time.`,
+        );
         resetBookForApptForm();
         fetchData();
       } else {
@@ -1077,6 +1083,33 @@ Keep this slip for consultation.
     );
   }
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const filteredAppointments = appointments.filter((appt) => {
+    const apptDate = new Date(appt.date);
+    apptDate.setHours(0, 0, 0, 0);
+
+    if (appointmentFilter === "today") {
+      return apptDate.getTime() === today.getTime();
+    }
+
+    if (appointmentFilter === "tomorrow") {
+      return apptDate.getTime() === tomorrow.getTime();
+    }
+
+    return true;
+  });
+
+  const searchedAppointments = filteredAppointments.filter((appt) =>
+    appt.patient?.user?.phoneNumber
+      ?.toLowerCase()
+      .includes(searchPhone.toLowerCase()),
+  );
+
   return (
     <div className="dashboard-content fade-in">
       <div className="dashboard-title-row">
@@ -1144,7 +1177,7 @@ Keep this slip for consultation.
               <div className="card-header-row">
                 <h3>Recent Appointments</h3>
               </div>
-              {appointments.length === 0 ? (
+              {filteredAppointments.length === 0 ? (
                 <p className="no-data-text">No appointments recorded yet.</p>
               ) : (
                 <div className="table-responsive">
@@ -1171,7 +1204,7 @@ Keep this slip for consultation.
                               className={`badge badge-${
                                 appt.status === "confirmed"
                                   ? "success"
-                                  : appt.status === "pending"
+                                  : appt.status === "scheduled"
                                     ? "warning"
                                     : appt.status === "completed"
                                       ? "info"
@@ -1750,8 +1783,84 @@ Keep this slip for consultation.
 
       {currentTab === "appointments" && (
         <div className="tab-pane-container">
-          <div className="card-header-row">
+          {/* <div className="card-header-row">
             <h3>Patient Appointment Schedule</h3>
+            {!showBookForApptForm && (
+              <button
+                onClick={() => setShowBookForApptForm(true)}
+                className="btn btn-primary btn-sm"
+              >
+                <Plus size={16} />
+                <span>Book Appointment</span>
+              </button>
+            )}
+          </div> */}
+          {/* <div className="card-header-row">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <h3>Patient Appointment Schedule</h3>
+
+              <select
+                className="appointment-filter"
+                value={appointmentFilter}
+                onChange={(e) => setAppointmentFilter(e.target.value)}
+                style={{ width: "140px" }}
+              >
+                <option value="all">All</option>
+                <option value="today">Today</option>
+                <option value="tomorrow">Tomorrow</option>
+              </select>
+            </div>
+
+            {!showBookForApptForm && (
+              <button
+                onClick={() => setShowBookForApptForm(true)}
+                className="btn btn-primary btn-sm"
+              >
+                <Plus size={16} />
+                <span>Book Appointment</span>
+              </button>
+            )}
+          </div> */}
+
+          <div className="card-header-row">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
+            >
+              <h3>Patient Appointment Schedule</h3>
+
+              <select
+                className="appointment-filter"
+                value={appointmentFilter}
+                onChange={(e) => setAppointmentFilter(e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="today">Today</option>
+                <option value="tomorrow">Tomorrow</option>
+              </select>
+
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search phone number..."
+                value={searchPhone}
+                onChange={(e) => setSearchPhone(e.target.value)}
+                style={{
+                  width: "220px",
+                }}
+              />
+            </div>
+
             {!showBookForApptForm && (
               <button
                 onClick={() => setShowBookForApptForm(true)}
@@ -2063,7 +2172,7 @@ Keep this slip for consultation.
                   className={`badge badge-${
                     viewingAppt.status === "confirmed"
                       ? "success"
-                      : viewingAppt.status === "pending"
+                      : viewingAppt.status === "scheduled"
                         ? "warning"
                         : viewingAppt.status === "completed"
                           ? "info"
@@ -2114,7 +2223,7 @@ Keep this slip for consultation.
               </div>
 
               <div className="form-actions-row">
-                {viewingAppt.status === "pending" && (
+                {/* {viewingAppt.status === "scheduled" && (
                   <button
                     onClick={() =>
                       handleSaveApptNotes(viewingAppt._id, "confirmed")
@@ -2124,7 +2233,20 @@ Keep this slip for consultation.
                     <Check size={14} />
                     <span>Confirm Appointment</span>
                   </button>
-                )}
+                )} */}
+                {viewingAppt.status === "scheduled" &&
+                  new Date(viewingAppt.date).toDateString() ===
+                    new Date().toDateString() && (
+                    <button
+                      onClick={() =>
+                        handleSaveApptNotes(viewingAppt._id, "confirmed")
+                      }
+                      className="btn btn-primary"
+                    >
+                      <Check size={14} />
+                      <span>Confirm Appointment</span>
+                    </button>
+                  )}
 
                 {viewingAppt.status === "confirmed" &&
                   !viewingAppt.tokenNumber && (
@@ -2150,7 +2272,7 @@ Keep this slip for consultation.
                     </button>
                   )}
 
-                {(viewingAppt.status === "pending" ||
+                {(viewingAppt.status === "scheduled" ||
                   viewingAppt.status === "confirmed") && (
                   <button
                     onClick={() => {
@@ -2257,7 +2379,7 @@ Keep this slip for consultation.
                   </tr>
                 </thead>
                 <tbody>
-                  {appointments.map((appt) => (
+                  {filteredAppointments.map((appt) => (
                     <tr key={appt._id}>
                       <td className="strong-text">
                         {appt.patient?.user?.name || "N/A"}
@@ -2276,7 +2398,7 @@ Keep this slip for consultation.
                           className={`badge badge-${
                             appt.status === "confirmed"
                               ? "success"
-                              : appt.status === "pending"
+                              : appt.status === "scheduled"
                                 ? "warning"
                                 : appt.status === "completed"
                                   ? "info"

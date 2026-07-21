@@ -70,8 +70,8 @@ const appointmentSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "cancelled", "completed"],
-      default: "pending",
+      enum: ["booked", "checked-in", "confirmed", "cancelled", "completed"],
+      default: "booked",
     },
     notes: {
       type: String,
