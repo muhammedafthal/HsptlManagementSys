@@ -56,7 +56,7 @@ export const bookAppointment = async (
       date,
       timeSlot,
       reason,
-      status: "booked",
+      status: "scheduled",
     });
 
     res.status(201).json({ success: true, data: appointment });
@@ -92,6 +92,22 @@ export const getAppointments = async (
       query.doctor = doctor._id;
     }
 
+    // Automatically cancel expired scheduled appointments
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    await Appointment.updateMany(
+      {
+        status: "scheduled",
+        date: { $lt: today },
+      },
+      {
+        $set: {
+          status: "cancelled",
+        },
+      },
+    );
+
     const appointments = await Appointment.find(query)
       .populate({
         path: "patient",
@@ -125,7 +141,7 @@ export const getAppointments = async (
     for (const appointment of appointments) {
       const apptDateKey = toDateKey(appointment.date);
 
-      if (apptDateKey < todayKey && appointment.status === "booked") {
+      if (apptDateKey < todayKey && appointment.status === "scheduled") {
         appointment.status = "cancelled";
         await appointment.save();
       }
@@ -162,6 +178,17 @@ export const getAppointment = async (
         .status(404)
         .json({ success: false, message: "Appointment not found" });
       return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const appointmentDate = new Date(appointment.date);
+    appointmentDate.setHours(0, 0, 0, 0);
+
+    if (appointment.status === "scheduled" && appointmentDate < today) {
+      appointment.status = "cancelled";
+      await appointment.save();
     }
 
     // Check authorization: Admin, appointment doctor, or appointment patient
@@ -275,7 +302,7 @@ export const generateToken = async (
     // --- Expiry handling ---
     if (apptDateKey < todayKey) {
       // Appointment date already passed
-      if (appointment.status === "booked") {
+      if (appointment.status === "scheduled") {
         appointment.status = "cancelled";
         await appointment.save();
       }
@@ -403,7 +430,7 @@ export const editAppointment = async (
     // If the visit was already confirmed, rescheduling should send it back
     // for the doctor/admin to re-confirm the new date/slot.
     if (appointment.status === "confirmed") {
-      appointment.status = "booked";
+      appointment.status = "scheduled";
     }
 
     await appointment.save();

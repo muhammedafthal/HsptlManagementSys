@@ -16,6 +16,7 @@ import {
   Ticket,
   Eye,
   RefreshCw,
+  Search,
 } from "lucide-react";
 
 interface AdminDashboardProps {
@@ -1829,14 +1830,7 @@ Keep this slip for consultation.
           </div> */}
 
           <div className="card-header-row">
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                flexWrap: "wrap",
-              }}
-            >
+            <div className="appointment-toolbar">
               <h3>Patient Appointment Schedule</h3>
 
               <select
@@ -1849,16 +1843,17 @@ Keep this slip for consultation.
                 <option value="tomorrow">Tomorrow</option>
               </select>
 
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search phone number..."
-                value={searchPhone}
-                onChange={(e) => setSearchPhone(e.target.value)}
-                style={{
-                  width: "220px",
-                }}
-              />
+              <div className="appointment-search-wrapper">
+                <Search size={18} className="appointment-search-icon" />
+
+                <input
+                  type="text"
+                  className="appointment-search"
+                  placeholder="Search by phone number..."
+                  value={searchPhone}
+                  onChange={(e) => setSearchPhone(e.target.value)}
+                />
+              </div>
             </div>
 
             {!showBookForApptForm && (
@@ -2363,7 +2358,7 @@ Keep this slip for consultation.
 
           {showBookForApptForm ||
           editingApptId ||
-          viewingApptId ? null : appointments.length === 0 ? (
+          viewingApptId ? null : searchedAppointments.length === 0 ? (
             <p className="no-data-text">No appointments booked.</p>
           ) : (
             <div className="table-responsive fade-in">
@@ -2374,12 +2369,13 @@ Keep this slip for consultation.
                     <th>Doctor</th>
                     <th>Reason</th>
                     <th>Date & Slot</th>
+                    {/* <th>Token</th> */}
                     <th>Status</th>
                     <th>Manage</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAppointments.map((appt) => (
+                  {searchedAppointments.map((appt) => (
                     <tr key={appt._id}>
                       <td className="strong-text">
                         {appt.patient?.user?.name || "N/A"}
@@ -2393,6 +2389,15 @@ Keep this slip for consultation.
                         {new Date(appt.date).toLocaleDateString()} -{" "}
                         {appt.timeSlot}
                       </td>
+                      {/* <td className="strong-text">
+                        {appt.tokenNumber ? (
+                          <span className="token-badge">
+                            {appt.tokenNumber}
+                          </span>
+                        ) : (
+                          "-"
+                        )}
+                      </td> */}
                       <td>
                         <span
                           className={`badge badge-${
