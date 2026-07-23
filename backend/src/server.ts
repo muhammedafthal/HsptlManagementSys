@@ -52,7 +52,7 @@ const seedAdmin = async () => {
     if (!adminExists) {
       console.log("Seeding default Admin user...");
       await User.create({
-        name: "systemadmin",
+        name: "System Admin",
         // email: "admin@hospital.com",
         // password: "admin123",
         role: "admin",
