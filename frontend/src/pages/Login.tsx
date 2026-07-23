@@ -24,10 +24,10 @@ export const Login: React.FC<LoginProps> = ({ onNavigateToRegister }) => {
     setIsSubmitting(false);
   };
 
-  const fillDemoAdmin = () => {
-    setName("System Admin");
-    setPhoneNumber("0000000000");
-  };
+  // const fillDemoAdmin = () => {
+  //   setName("System Admin");
+  //   setPhoneNumber("0000000000");
+  // };
 
   return (
     <div className="login-page-container fade-in">
@@ -104,13 +104,13 @@ export const Login: React.FC<LoginProps> = ({ onNavigateToRegister }) => {
           </p>
         </div>
 
-        <div className="demo-credentials-box">
+        {/* <div className="demo-credentials-box">
           <h4>Demo Account (Admin)</h4>
           <p>Login to setup doctor accounts, patients, and view statistics.</p>
           <button onClick={fillDemoAdmin} className="btn btn-secondary btn-sm">
             Autofill Admin Login
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -95,16 +95,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Check for user
-    const user = await User.findOne({ phoneNumber }).select("+password");
+    const user = await User.findOne({ name, phoneNumber }).select("+password");
     if (!user) {
       res.status(401).json({ success: false, message: "Invalid credentials" });
       return;
     }
 
     if (user.phoneNumber !== phoneNumber) {
-      res
-        .status(401)
-        .json({ success: false, message: "Invalid credentialsss" });
+      res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
     // Check if password matches
