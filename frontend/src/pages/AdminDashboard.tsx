@@ -914,26 +914,26 @@ Keep this slip for consultation.
   };
 
   // Appointment status toggle
-  const handleUpdateAppointment = async (apptId: string, status: string) => {
-    try {
-      const res = await fetch(`${apiUrl}/appointments/${apptId}/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchData();
-      } else {
-        alert(data.message || "Failed to update appointment");
-      }
-    } catch (err) {
-      alert("Error updating status");
-    }
-  };
+  // const handleUpdateAppointment = async (apptId: string, status: string) => {
+  //   try {
+  //     const res = await fetch(`${apiUrl}/appointments/${apptId}/status`, {
+  //       method: "PUT",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       body: JSON.stringify({ status }),
+  //     });
+  //     const data = await res.json();
+  //     if (data.success) {
+  //       fetchData();
+  //     } else {
+  //       alert(data.message || "Failed to update appointment");
+  //     }
+  //   } catch (err) {
+  //     alert("Error updating status");
+  //   }
+  // };
 
   // Appointment Edit (reschedule)
   const handleOpenEditAppointment = (appt: any) => {
